@@ -14,8 +14,6 @@ st.subheader("Object Detection Web App")
 model = None
 confidence = 0.25
 
-st.write("Open the Sidebar to either upload a file or show the source code.")
-
 
 def main():
     readme_text = st.markdown(get_file_content_as_string("README.md"))
