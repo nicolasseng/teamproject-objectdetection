@@ -11,7 +11,6 @@ st.set_page_config(page_title="Object Detection Web App", layout="wide")
 
 # HEADER
 st.subheader("Object Detection Web App")
-model = None
 confidence = 0.25
 
 
@@ -20,9 +19,9 @@ def main():
     st.sidebar.title("What to do?")
     app_mode = st.sidebar.selectbox(
         "What do you want to do?",
-        ["Home", "Run the App", "Show the Code", "Upload a File"],
+        ["Readme File", "Run Application", "Show the Code", "Upload a File?"],
     )
-    if app_mode == "Run the App":
+    if app_mode == "Run Application":
         run_the_app()
     elif app_mode == "Show the Code":
         readme_text.empty()
@@ -49,12 +48,13 @@ def upload_file():
         # Can be used wherever a "file-like" object is accepted:
         dataframe = pd.read_csv(uploaded_file)
         st.write(dataframe)
+        st.info("File upload was successfull", icon=ℹ️)
 
 
 @st.cache_resource(show_spinner=False)
 def get_file_content_as_string(path):
     url = (
-        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/main/"
+        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/FileUpload/"
         + path
     )
     response = urllib.request.urlopen(url)
@@ -64,13 +64,39 @@ def get_file_content_as_string(path):
 def run_the_app():
     st.sidebar.markdown("# Settings")
     model_src = st.sidebar.radio(
-        "Select file", ["Use our demo files", "Use your own files"]
+        "Select file:", ["Use our demo files", "Use your own files"]
     )
     if model_src == "Use your own files":
         upload_file()
+        col1, col2 = st.columns(2)
+        with col1:
+            image2 = Image.open("data/sample_img/Image3.jpeg")
+            st.image(
+                image2,
+                use_column_width="auto",
+                caption="Image without object detection",
+            )
+        with col2:
+            image = Image.open("data/sample_img/Test_Image.png")
+            st.image(
+                image, use_column_width="auto", caption="image with object detection"
+            )
     elif model_src == "Use our demo files":
-        image = Image.open("data/sample_img/Test_Image.png")
-        st.image(image, caption="This is an example image")
+        col1, col2 = st.columns(2)
+        with col1:
+            image2 = Image.open("data/sample_img/Image3.jpeg")
+            st.image(
+                image2,
+                use_column_width="auto",
+                caption="Image without object detection",
+            )
+        with col2:
+            image = Image.open("data/sample_img/Test_Image.png")
+            st.image(
+                image, use_column_width="auto", caption="image with object detection"
+            )
+
+    st.progress(80, "Intersection over Union:")
 
     input_option = st.sidebar.radio(
         "Select input type: ", ["image", "video", "livestream"]
@@ -84,7 +110,7 @@ def run_the_app():
         classes = [model_names.index(name) for name in assigned_class]
 
     selected_frame_index = st.sidebar.slider(
-        "Choose an image (index)", min_value=0, max_value=5, value=0, step=1
+        "Switch between your images", min_value=0, max_value=5, value=0, step=1
     )
     st.sidebar.markdown("# Model")
     confidence_threshold = st.sidebar.slider(
