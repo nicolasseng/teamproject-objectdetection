@@ -5,6 +5,7 @@ import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
+import torch
 from PIL import Image
 from streamlit_option_menu import option_menu
 
@@ -80,7 +81,7 @@ def upload_file_sidebar():
 @st.cache_resource(show_spinner=False)
 def get_file_content_as_string(path):
     url = (
-        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/FileUpload/"
+        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/main/"
         + path
     )
     response = urllib.request.urlopen(url)
