@@ -13,14 +13,16 @@ def ReadOutMarkdown(file:str) -> str:
     '''
     function returning 
     ''' 
-    with open(file,"r") as file: 
-        markdownString = file.read();
-        
-    return markdownString;
+    try:
+        with open(file,"r") as file: 
+            ReadOutMarkdown = file.read();
+    except: 
+        ReadOutMarkdown = "No file was found, sorry"
+    return ReadOutMarkdown;
     
         
         
-
+@st.cache_resource(show_spinner=False)
 def DisplayReadme(): 
     '''
     function showcases Readme
@@ -32,6 +34,6 @@ def DisplayReadme():
     st.markdown(ReadOutMarkdown(filepath))
 
 if __name__ == "__main__": 
-    # testpath = os.path.join( os.getcwd(), "README.md")
-    # print(ProcessReadme(testpath))
+    testpath = os.path.join( os.getcwd(), "README.md")
+    print(ReadOutMarkdown(testpath) ) 
     exit("not meant to be run")
