@@ -83,15 +83,6 @@ def upload_file_sidebar():
         st.info("File upload was successfull", icon=ℹ️)
 
 
-@st.cache_resource(show_spinner=False)
-def get_file_content_as_string(path):
-    url = (
-        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/main/"
-        + path
-    )
-    response = urllib.request.urlopen(url)
-    return response.read().decode("utf-8")
-
 
 def run_the_app():
     st.sidebar.markdown("# Settings")
