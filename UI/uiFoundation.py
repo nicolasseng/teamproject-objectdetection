@@ -11,13 +11,16 @@ from streamlit_option_menu import option_menu as stOptionMenu
 # -- / internal imports 
 import settings.uiSettings as UiSettings 
 from modules.moduleShowReadMe import DisplayReadme
+from modules.moduleShowSourceCode import ShowSourceCode
 
 # --- / 
 # -- / function to select mode to display at runtime
-def selectProgramMode()  : 
+def SelectProgramMode()  : 
     '''
+    function displaying a streamlit menu with several options
+    upon selection of a module to execute, said module is executed 
     '''
-    appModeSelection = ["Readme File", "Run Application", "Show the Code", "Upload a File?"];
+    appModeSelection = ["Readme File", "Run Application", "Show the Code", "Upload File[not used]"];
     appModeSelectionIcons = ["book", "display", "download", "cloud-upload"],
     app_mode = stOptionMenu(
         None, 
@@ -34,7 +37,7 @@ def selectProgramMode()  :
         exit();
     elif app_mode == appModeSelection[2]:
         # showing source code for 
-        exit();
+        ShowSourceCode()
     elif app_mode == appModeSelection[3]:
         #uploading files 
         exit();
