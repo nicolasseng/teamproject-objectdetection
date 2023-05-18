@@ -11,7 +11,7 @@ from streamlit_option_menu import option_menu
 
 # --- / 
 # -- / internal imports 
-from UI.uiFoundation import selectProgramMode
+from UI.uiFoundation import SelectProgramMode
 
 st.set_page_config(page_title="Object Detection Web App", layout="wide")
 
@@ -23,7 +23,7 @@ readme_text = None
 
 def main():
     # st.sidebar.title("What to do?")
-    selectProgramMode();
+    SelectProgramMode();
     # app_mode = option_menu(
     #     None,
     #     ["Readme File", "Run Application", "Show the Code", "Upload a File?"],
