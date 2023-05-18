@@ -1,13 +1,17 @@
 import urllib
 from io import StringIO
 
-import altair as alt
+# import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
-import torch
+# import torch
 from PIL import Image
 from streamlit_option_menu import option_menu
+
+# --- / 
+# -- / internal imports 
+from UI.uiFoundation import selectProgramMode
 
 st.set_page_config(page_title="Object Detection Web App", layout="wide")
 
@@ -19,21 +23,22 @@ readme_text = None
 
 def main():
     # st.sidebar.title("What to do?")
-    app_mode = option_menu(
-        None,
-        ["Readme File", "Run Application", "Show the Code", "Upload a File?"],
-        orientation="horizontal",
-        icons=["book", "display", "download", "cloud-upload"],
-    )
-    if app_mode == "Run Application":
-        run_the_app()
-    elif app_mode == "Readme File":
-        readme_text = st.markdown(get_file_content_as_string("README.md"))
-    elif app_mode == "Show the Code":
-        # readme_text.empty()
-        st.code(get_file_content_as_string("FirstInterface.py"))
-    elif app_mode == "Upload a File?":
-        upload_file()
+    selectProgramMode();
+    # app_mode = option_menu(
+    #     None,
+    #     ["Readme File", "Run Application", "Show the Code", "Upload a File?"],
+    #     orientation="horizontal",
+    #     icons=["book", "display", "download", "cloud-upload"],
+    # )
+    # if app_mode == "Run Application":
+    #     run_the_app()
+    # elif app_mode == "Readme File":
+    #     readme_text = st.markdown(get_file_content_as_string("README.md"))
+    # elif app_mode == "Show the Code":
+    #     # readme_text.empty()
+    #     st.code(get_file_content_as_string("FirstInterface.py"))
+    # elif app_mode == "Upload a File?":
+    #     upload_file()
 
 
 def upload_file():
@@ -77,15 +82,6 @@ def upload_file_sidebar():
         st.write(dataframe)
         st.info("File upload was successfull", icon=ℹ️)
 
-
-@st.cache_resource(show_spinner=False)
-def get_file_content_as_string(path):
-    url = (
-        "https://raw.githubusercontent.com/nicolasseng/teamproject-objectdetection/main/"
-        + path
-    )
-    response = urllib.request.urlopen(url)
-    return response.read().decode("utf-8")
 
 
 def run_the_app():
