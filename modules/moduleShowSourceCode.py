@@ -11,7 +11,7 @@ import os
 
 # --- / 
 # -- / internal imports
-from modules.moduleFileManagement import readFile
+from modules.moduleFileManagement import readFile, gatherFilePath
 # --- / 
 # -- / 
 def ShowSourceCode() -> None:
