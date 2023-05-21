@@ -12,6 +12,7 @@ from streamlit_option_menu import option_menu as stOptionMenu
 import settings.uiSettings as UiSettings 
 from modules.moduleShowReadMe import DisplayReadme
 from modules.moduleShowSourceCode import ShowSourceCode
+from UI.uiRunningApp import run_the_app
 
 # --- / 
 # -- / function to select mode to display at runtime
@@ -34,7 +35,7 @@ def SelectProgramMode()  :
         DisplayReadme();
     elif app_mode == appModeSelection[1]: 
         #runObjectDetection 
-        exit();
+        run_the_app()
     elif app_mode == appModeSelection[2]:
         # showing source code for 
         ShowSourceCode()

@@ -73,12 +73,13 @@ def LoadImage(imagePath:str):
 # --- / 
 # -- / processing image to blob
 
-def ProcessImage(imagePath:str): 
+def ProcessImage(imageObject:object): 
     '''
     function loading and preparing an image for processing in network
     returns imageBlob -> processed by opencv 
     '''
-    ImgConverted = LoadImage(imagePath);
+    ImgConverted = imageObject
+    # ImgConverted = LoadImage(imagePath);
     
     # require fixed size of image for MobileNet to process it accordingly
     ImgFrame = opencv.resize(ImgConverted,(MSSDResizeFactor,MSSDResizeFactor))
@@ -89,17 +90,38 @@ def ProcessImage(imagePath:str):
 # --- / 
 # -- / gathering dimensions of supplied image 
 
-def gatherImageDimensions(imagePath:str) :
-    readImg = LoadImage(imagePath)
-    (h,w) = readImg.shape[:2]
+def gatherImageDimensions(imageObject:object) :
+    (h,w) = imageObject.shape[:2]
     return (h,w)    
+
+# --- / 
+# -- / wrapper for Dnn 
+
+def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,imagePath:str="none",imageObj=None):
+    ''' 
+    creates wrapper for "runDnn"
+    @param neuralNet = initialized neural network object 
+    @param requiredConfidence:float = float defining required confidence 
+    @param imagePath = if no object is available, take a path and query it 
+    @param imageObj = if no path was supplied we take an object
+    
+    making it possible to either supply an image or a path 
+    '''
+    # checking whether an image was supplied or not 
+    if imagePath != "none":
+        # gathering image object 
+        imgQueried =LoadImage(imagePath)
+        return runDnn(imgQueried,neuralNet,requiredConfidence)
+    else:
+        # no path, so object was given 
+        return runDnn(imageObj,neuralNet,requiredConfidence)
 
 # --- / 
 # -- / running Dnn 
 
-def runDnn(imagePath,neuralNet:object,requiredConfidence:float):
+def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
     '''
-    takes an imagepath, neural network object - initialized, and the required confidence to achieve for detected objects. 
+    takes an imageObject, neural network object - initialized, and the required confidence to achieve for detected objects. 
     
     
     
@@ -110,16 +132,16 @@ def runDnn(imagePath,neuralNet:object,requiredConfidence:float):
     #TODO Refactor into smaller portions 
     #TODO adapt for use with Classing
     # gathering image data 
-    ImgQueried =LoadImage(imagePath)
-    ImgResized = opencv.resize(ImgQueried,(MSSDResizeFactor,MSSDResizeFactor))
-    imageBlob = ProcessImage(imagePath)
+    imgQueried = imageObject  # setting obtained image directly
+    ImgResized = opencv.resize(imgQueried,(MSSDResizeFactor,MSSDResizeFactor))
+    imageBlob = ProcessImage(imageObject)
     
     # creating copies of image for displaying afterwards 
-    imageCopy = ImgQueried.copy()
-    imageCopy2 = ImgQueried.copy() # why two ?
+    imageCopy = imgQueried.copy()
+    imageCopy2 = imgQueried.copy() # why two ?
     # setting scaling for better positioning of rectangles 
-    imgWidthFactor = ImgQueried.shape[1]/MSSDResizeFactor
-    imgHeightFactor = ImgQueried.shape[0]/MSSDResizeFactor
+    imgWidthFactor = imgQueried.shape[1]/MSSDResizeFactor
+    imgHeightFactor = imgQueried.shape[0]/MSSDResizeFactor
     imgColumns:int = MSSDResizeFactor
     imgRows:int = MSSDResizeFactor
      
@@ -152,7 +174,7 @@ def runDnn(imagePath,neuralNet:object,requiredConfidence:float):
             opencv.rectangle( ImgResized, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),(0,255,0))
             opencv.rectangle( imageCopy2, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),(0,255,0),-1)
     
-    opencv.addWeighted(imageCopy, MSSDDisplayOpacity, ImgQueried , 1 - MSSDDisplayOpacity, 0, ImgQueried)
+    opencv.addWeighted(imageCopy, MSSDDisplayOpacity, imgQueried , 1 - MSSDDisplayOpacity, 0, imgQueried)
     
     # second loop for improved imaging / search 
     for prediction in range(detectedObjects.shape[2]): 
@@ -172,7 +194,7 @@ def runDnn(imagePath,neuralNet:object,requiredConfidence:float):
             cornerRightY= int(int(detectedObjects[0, 0, prediction, 6] * imgRows) * imgHeightFactor)
             
             # creating rectangles to poistion around 
-            opencv.rectangle( ImgQueried, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),(0,0,0),2)
+            opencv.rectangle( imgQueried, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),(0,0,0),2)
             # we now have to set and enable the given label and rectangle to be positioned and shown on our implementation
             if labelIndex in CLASSES:
                 # found label, now creating according text-outputs 
@@ -190,17 +212,18 @@ def runDnn(imagePath,neuralNet:object,requiredConfidence:float):
                 LabelRightY = cornerLeftY + maxLabelHeight 
                 LabelRightX = cornerLeftX + labelSize[0]
                 # drawing LabelBox 
-                opencv.rectangle(ImgQueried,(cornerLeftX,LabelLeftY), (LabelRightX,LabelRightY),(0,0,0))
+                opencv.rectangle(imgQueried,(cornerLeftX,LabelLeftY), (LabelRightX,LabelRightY),(0,0,0))
                 # setting Text into Box
-                opencv.putText(ImgQueried,label, (cornerLeftX,LabelLeftY), opencv.FONT_HERSHEY_TRIPLEX,0.8,(200,200,200))
-                
+                opencv.putText(imgQueried,label, (cornerLeftX,LabelLeftY), opencv.FONT_HERSHEY_TRIPLEX,0.8,(200,200,200))
+    
                 
                 
     # display the prediction       
-    opencv.namedWindow("frame",opencv.WINDOW_NORMAL)
-    opencv.imshow("frame",ImgQueried)
-    opencv.waitKey(0)
-    opencv.destroyAllWindows()
+    # opencv.namedWindow("frame",opencv.WINDOW_NORMAL)
+    return imgQueried # retuning result 
+    # return opencv.imshow("frame",imgQueried)
+    # opencv.waitKey(0)
+    # opencv.destroyAllWindows()
 
 # --- / 
 # -- / 
