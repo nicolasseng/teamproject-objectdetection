@@ -4,4 +4,5 @@ from settings.modelSettings import MSSDnetwork, MSSDWeight,gatherFilePath
 
 
 loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
-print(type(MSSD.wrapperRunningDnn(loadedNet,0.1,gatherFilePath("**/sampleImg.jpg"),)))
+
+MSSD.runOnVideoStream(loadedNet,0.2)
