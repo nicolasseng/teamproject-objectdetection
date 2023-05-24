@@ -5,4 +5,4 @@ from settings.modelSettings import MSSDnetwork, MSSDWeight,gatherFilePath
 
 loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
 
-MSSD.runOnVideoStream(loadedNet,0.2)
+# MSSD.runDnn(loadedNet,0.2)

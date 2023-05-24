@@ -50,7 +50,10 @@ def run_the_app():
         )
         classes = [model_names.index(name) for name in assigned_class]
     
-    if imageSource == FileSelection[0]:
+    # --- / 
+    # -- / formatting Main-window accordingly 
+    
+    if imageSource == FileSelection[0]: # sample images
         st.sidebar.markdown("### available demo images")
         #TODO add carousel of images available
         
@@ -58,7 +61,7 @@ def run_the_app():
         imagePath = gatherFilePath("**/sampleImg*.jpg")
         displayMainWindow(imagePath,confidence_threshold)
     
-    if imageSource == FileSelection[1]:
+    if imageSource == FileSelection[1]: # uploading images
         #style if Sources are uploads
         st.sidebar.markdown("### upload your image")
         # setting uploaded image as the one to display
@@ -67,32 +70,38 @@ def run_the_app():
         print("file was uploaded")
         displayMainWindow(imageUploaded,confidence_threshold)
         
-    if imageSource == FileSelection[2]:
+    if imageSource == FileSelection[2]: # supplying video stream
         st.sidebar.markdown("### starting and querying webcam")
         print("running webcams")
         displayMainWindowVideo(confidence_threshold)
         
-    
-    # defining Main windows
-    
-    # gathering file to display:
-    #TODO add depency for selected image from carousel 
-    # imageDisplayed = gatherFilePath("**/sampleImg*.jpg")
-    
-    # TODO insert model to process here // 
+
     
 def displayMainWindowVideo(confidence_threshold:float):
     column1,column2 = st.columns(2)
     loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    # setting video input
+    VideoStream = opencv.VideoCapture(0)
+    result, initialFrame = VideoStream.read()
+    # empty image container to fill during runtime
+    displayedImage = st.image(initialFrame)
+    
+    
+    with column1:
+        displayedImage
+        
+    
     while True:
-        VideoStream = opencv.VideoCapture(0)
-        print("webcam running")
-        frame = VideoStream.read()
-        imageProcessed = MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,frame)
-        with column1:
-            st.image(imageProcessed,
-                    caption="image with object detection"
-                    )
+        
+        result,frame = VideoStream.read()
+        # imageProcessed = st.image([])
+        resultImage = MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,imageObj=frame)
+        imageProcessed = opencv.cvtColor(resultImage,opencv.COLOR_BGR2RGB)
+        
+        # piping result to displayedImage
+        displayedImage.image(imageProcessed)
+        
+        
     
 
 def displayMainWindow(imageUploaded,confidence_threshold:float):

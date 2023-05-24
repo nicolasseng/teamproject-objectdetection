@@ -140,8 +140,7 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
     
     # gathering image data 
     imgQueried = imageObject  # setting obtained image directly
-    ImgResized = opencv.resize(imgQueried,(MSSDResizeFactor,MSSDResizeFactor))
-    imageBlob = ProcessImage(imageObject)
+    imageBlob = ProcessImage(imageObject) # resizing accordingly 
     
     # setting scaling for better positioning of rectangles 
     imgWidthFactor = imgQueried.shape[1]/MSSDResizeFactor
@@ -209,8 +208,9 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
         
         
 
-
-
+# --- /
+# -- / yet to be implemented
+# -- allows for displaying results locally in opencv window
 def runLocally():
     ''' 
     function taking and running a local object detection method so that its output is presented as new window
