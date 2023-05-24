@@ -15,6 +15,9 @@ import pandas as pd
 import numpy as np
 from streamlit_option_menu import option_menu
 
+# for video input --> not the optimal solution
+import cv2 as opencv
+
 # --- /
 # -- / 
 
@@ -63,6 +66,12 @@ def run_the_app():
         # waiting until file was uploaded 
         print("file was uploaded")
         displayMainWindow(imageUploaded,confidence_threshold)
+        
+    if imageSource == FileSelection[2]:
+        st.sidebar.markdown("### starting and querying webcam")
+        print("running webcams")
+        displayMainWindowVideo(confidence_threshold)
+        
     
     # defining Main windows
     
@@ -72,6 +81,18 @@ def run_the_app():
     
     # TODO insert model to process here // 
     
+def displayMainWindowVideo(confidence_threshold:float):
+    column1,column2 = st.columns(2)
+    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    while True:
+        VideoStream = opencv.VideoCapture(0)
+        print("webcam running")
+        frame = VideoStream.read()
+        imageProcessed = MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,frame)
+        with column1:
+            st.image(imageProcessed,
+                    caption="image with object detection"
+                    )
     
 
 def displayMainWindow(imageUploaded,confidence_threshold:float):

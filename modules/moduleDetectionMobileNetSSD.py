@@ -143,9 +143,6 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
     ImgResized = opencv.resize(imgQueried,(MSSDResizeFactor,MSSDResizeFactor))
     imageBlob = ProcessImage(imageObject)
     
-    # creating copies of image for displaying afterwards 
-    imageCopy = imgQueried.copy()
-    imageCopy2 = imgQueried.copy() # why two ?
     # setting scaling for better positioning of rectangles 
     imgWidthFactor = imgQueried.shape[1]/MSSDResizeFactor
     imgHeightFactor = imgQueried.shape[0]/MSSDResizeFactor
@@ -209,91 +206,6 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
     return imgQueried 
     
 
-# --- / 
-# -- / running with VideoStream :: 
-
-def runOnVideoStream(neuralNet:object,requiredConfidence:float):
-    VideoStream = opencv.VideoCapture(0)
-    
-    CLASSES:dict = { 0: 'background',
-    1: 'aeroplane', 2: 'bicycle', 3: 'bird', 4: 'boat',
-    5: 'bottle', 6: 'bus', 7: 'car', 8: 'cat', 9: 'chair',
-    10: 'cow', 11: 'diningtable', 12: 'dog', 13: 'horse',
-    14: 'motorbike', 15: 'person', 16: 'pottedplant',
-    17: 'sheep', 18: 'sofa', 19: 'train', 20: 'tvmonitor' }
-    
-    COLORLABEL =generateLabelColors(len(CLASSES))
-    
-    # entering loop to continously capture frames from VideoStream
-    while True:
-        # gathering frame from Stream 
-        ret, frame = VideoStream.read()
-        # resizing it down to 300x300 for MobileNetSSD
-        frame_resized = opencv.resize(frame,(300,300)) # resize frame for prediction
-        # converting to imageblob of size 300,300 
-        # done by taking the mean --> reducing size of image while preserving information 
-        imageBlob = opencv.dnn.blobFromImage(frame_resized, 0.007843, (300, 300), (127.5, 127.5, 127.5), False)
-        #Set to network the input blob 
-        imgWidthFactor = frame.shape[1]/MSSDResizeFactor
-        imgHeightFactor = frame.shape[0]/MSSDResizeFactor
-        imgColumns:int = MSSDResizeFactor
-        imgRows:int = MSSDResizeFactor
-        neuralNet.setInput(imageBlob)
-        #Prediction of network
-        detectedObjects = neuralNet.forward()
-
-    
-        #TODO extract to function ProcessdetectedObjects() or similar 
-        for prediction in range(detectedObjects.shape[2]):
-            
-            # extract confidence of prediction 
-            confidence = detectedObjects[0,0,prediction,2];
-            
-            # check whether confidence reaches set level or not 
-            if confidence > requiredConfidence: 
-                # extracting label of detected image
-                
-                labelIndex = int(detectedObjects[0,0,prediction,1])
-            
-                #TODO refactor to displayRectangle()
-                # location of object in coordinates
-                cornerLeftX =int(int(detectedObjects[0, 0, prediction, 3] * imgColumns) * imgWidthFactor)
-                cornerLeftY =int( int(detectedObjects[0, 0, prediction, 4] * imgRows) * imgHeightFactor)
-                cornerRightX = int(int(detectedObjects[0, 0, prediction, 5] * imgColumns) * imgWidthFactor)
-                cornerRightY= int(int(detectedObjects[0, 0, prediction, 6] * imgRows) * imgHeightFactor)
-
-                
-                # setting rectangle about found object 
-                opencv.rectangle( frame, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),COLORLABEL[labelIndex],3)
-                
-                # we now have to set and enable the given label and rectangle to be positioned and shown on our implementation
-                if labelIndex in CLASSES:
-                    # TODO Additionally querying for Set Input CLASS --> Selection from Streamlit 
-                    
-                    # found label, now creating according text-outputs 
-                    label = "{} => {}".format(CLASSES[labelIndex],str(confidence))
-                    print("prediction : {}".format(label))
-                    
-                    labelSize, maxLabelHeight = opencv.getTextSize(label, opencv.FONT_HERSHEY_TRIPLEX, 1, 1)
-                    
-                    # gathering point for positioning label accordingly
-                    # deciding whether to take leftBottom corner for reference or label
-                    cornerLeftY = max(cornerLeftY,labelSize[1])
-                    # setting labelbox rectangle coordinates accordingly
-                    # reference is drawn from bottom left corner 
-                    LabelLeftY = cornerLeftY - labelSize[1]
-                    LabelRightY = cornerLeftY + maxLabelHeight 
-                    LabelRightX = cornerLeftX + labelSize[0]
-                    LabelOffset = 5
-                    # drawing LabelBox 
-                    opencv.rectangle(frame,(cornerLeftX,LabelLeftY-LabelOffset), (LabelRightX,cornerLeftY),COLORLABEL[labelIndex],2)
-                    # setting Text into Box
-                    # setting offset for Text to avoid clipping with frame
-                    opencv.putText(frame,label, (cornerLeftX,cornerLeftY-LabelOffset), opencv.FONT_HERSHEY_TRIPLEX,1,COLORLABEL[labelIndex],1,opencv.LINE_8,False)
-                    
-        # return detection result as imageObject
-        opencv.namedWindow("frame", opencv.WINDOW_NORMAL)
-        opencv.imshow("frame", frame)
         
         
 
