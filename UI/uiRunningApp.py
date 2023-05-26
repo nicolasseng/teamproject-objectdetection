@@ -1,19 +1,21 @@
 ''' 
 file contains logic for streamlit to display an according website 
 '''
-# --- /
-# -- / internal imports 
-import settings.modelSettings as msettings
-import modules.moduleDetectionMobileNetSSD as MSSD
-from settings.modelSettings import MSSDnetwork, MSSDWeight,gatherFilePath
+from io import StringIO
+
+import numpy as np
+import pandas as pd
 # --- / 
 # -- / external imports 
 import streamlit as st
-from io import StringIO
 from PIL import Image
-import pandas as pd
-import numpy as np
 from streamlit_option_menu import option_menu
+
+import modules.moduleDetectionMobileNetSSD as MSSD
+# --- /
+# -- / internal imports 
+import settings.modelSettings as msettings
+from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
 
 # --- /
 # -- / 
