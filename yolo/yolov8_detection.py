@@ -12,6 +12,14 @@ from ultralytics.yolo.v8.detect.predict import DetectionPredictor
 
 confidence = 0.25
 
+# Load the YOLO model
+
+
+def load_model(yolo_model):
+    model = YOLO(yolo_model)
+    return model
+
+
 def infer_image(frame, output):
     frame = cv2.resize(frame, (720, int(720*(9/16))))
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -25,10 +33,12 @@ def image_input(data_src):
     if data_src == 'Sample data':
         # get all sample images
         img_path = glob.glob('data/sample_img/*')
-        img_slider = st.slider("Select a test image.", min_value=1, max_value=len(img_path), step=1)
+        img_slider = st.slider("Select a test image.",
+                               min_value=1, max_value=len(img_path), step=1)
         img_file = img_path[img_slider - 1]
     else:
-        img_bytes = st.sidebar.file_uploader("Upload an image", type=['png', 'jpeg', 'jpg'])
+        img_bytes = st.sidebar.file_uploader(
+            "Upload an image", type=['png', 'jpeg', 'jpg'])
         if img_bytes:
             img_file = PIL.Image.open(img_bytes)
 
@@ -40,14 +50,14 @@ def image_input(data_src):
             res = model.predict(img_file, conf=confidence, classes=classes)
             boxes = res[0].boxes
             res_plotted = res[0].plot()[:, :, ::-1]
-            st.image(res_plotted, caption="Detected Image", use_column_width=True)
+            st.image(res_plotted, caption="Detected Image",
+                     use_column_width=True)
             try:
                 with st.expander("Detection Results"):
                     for box in boxes:
                         st.write(box.data)
             except Exception as ex:
                 st.write("No image is uploaded yet!")
-
 
 
 def video_input(data_src):
@@ -57,7 +67,8 @@ def video_input(data_src):
         vid_file = "data/sample_vid/sample.mp4"
     else:
         st.spinner("Waiting for your upload...")
-        vid_bytes = st.sidebar.file_uploader("Upload a video", type=['mp4', 'mpv', 'avi'])
+        vid_bytes = st.sidebar.file_uploader(
+            "Upload a video", type=['mp4', 'mpv', 'avi'])
         if vid_bytes:
             tfile = tempfile.NamedTemporaryFile(delete=False)
             tfile.write(vid_bytes.read())
@@ -101,14 +112,17 @@ def video_input(data_src):
 
         cap.release()
 
+
 def webcam():
     cap = cv2.VideoCapture(0)
     custom_size = st.sidebar.checkbox("Custom frame size")
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     if custom_size:
-        width = st.sidebar.number_input("Width", min_value=120, step=20, value=width)
-        height = st.sidebar.number_input("Height", min_value=120, step=20, value=height)
+        width = st.sidebar.number_input(
+            "Width", min_value=120, step=20, value=width)
+        height = st.sidebar.number_input(
+            "Height", min_value=120, step=20, value=height)
 
     fps = 0
     st1, st2, st3 = st.columns(3)
@@ -141,6 +155,7 @@ def webcam():
             break
 
     cap.release()
+
 
 # Does not work yet
 """ def youtube():
@@ -189,27 +204,49 @@ def run_yolov8():
 
     st.sidebar.title("Settings")
 
- 
-     # confidence slider
-    confidence = st.sidebar.slider('Confidence', min_value=0.1, max_value=1.0, value=.45)
+    # confidence slider
+    confidence = st.sidebar.slider(
+        'Confidence', min_value=0.1, max_value=1.0, value=.45)
 
-    model = YOLO("yolov8n.pt")
+    model = load_model("yolov8s.pt")
+
     # custom classes
     if st.sidebar.checkbox("Custom Classes"):
         model_names = list(model.names.values())
-        assigned_class = st.sidebar.multiselect("Select Classes", model_names, default=[model_names[0]])
+        assigned_class = st.sidebar.multiselect(
+            "Select Classes", model_names, default=[model_names[0]])
         classes = [model_names.index(name) for name in assigned_class]
     else:
         classes = list(model.names.keys())
 
     st.sidebar.markdown("---")
 
-        # input options
-    input_option = st.sidebar.radio("Select input type: ", ['image', 'video', 'webcam', "YouTube Video"])
+    yolo_model_selection = st.sidebar.radio(
+        "Select Yolov8 Model", ("YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"))
+
+    if yolo_model_selection == "YOLOv8n":
+        yolo_model = "yolov8n.pt"
+    elif yolo_model_selection == "YOLOv8s":
+        yolo_model = "yolov8s.pt"
+    elif yolo_model_selection == "YOLOv8m":
+        yolo_model = "yolov8m.pt"
+    elif yolo_model_selection == "YOLOv8l":
+        yolo_model = "yolov8l.pt"
+    elif yolo_model_selection == "Custom":
+        yolo_model = "C:/Users/frede/Documents/new_team/runs/detect/yolov8n_v8_50e/weights/best.pt"  # your path
+
+    model = load_model(yolo_model)
+
+    st.sidebar.markdown("---")
+
+    # input options
+    input_option = st.sidebar.radio(
+        "Select input type: ", ['image', 'video', 'webcam', "YouTube Video"])
 
     # input src option
     if input_option == "image" or input_option == "video":
-        data_src = st.sidebar.radio("Select input source: ", ['Sample data', 'Upload your own data'])
+        data_src = st.sidebar.radio("Select input source: ", [
+                                    'Sample data', 'Upload your own data'])
 
     if input_option == 'image':
         image_input(data_src)
