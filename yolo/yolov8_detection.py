@@ -3,6 +3,7 @@ import time
 
 import cv2
 import pafy
+import PIL
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
@@ -28,8 +29,7 @@ def image_input(data_src):
     else:
         img_bytes = st.sidebar.file_uploader("Upload an image", type=['png', 'jpeg', 'jpg'])
         if img_bytes:
-            img_file = "data/uploaded_data/upload." + img_bytes.name.split('.')[-1]
-            Image.open(img_bytes).save(img_file)
+            img_file = PIL.Image.open(img_bytes)
 
     if img_file:
         col1, col2 = st.columns(2)
