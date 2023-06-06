@@ -1,4 +1,5 @@
 import glob
+import tempfile
 import time
 
 import cv2
@@ -51,18 +52,21 @@ def image_input(data_src):
 
 def video_input(data_src):
     vid_file = None
+    tfile = None
     if data_src == 'Sample data':
         vid_file = "data/sample_vid/sample.mp4"
     else:
         st.spinner("Waiting for your upload...")
         vid_bytes = st.sidebar.file_uploader("Upload a video", type=['mp4', 'mpv', 'avi'])
         if vid_bytes:
-            vid_file = "data/sample_vid/upload." + vid_bytes.name.split('.')[-1]
-            with open(vid_file, 'wb') as out:
-                out.write(vid_bytes.read())
+            tfile = tempfile.NamedTemporaryFile(delete=False)
+            tfile.write(vid_bytes.read())
+            # vid_file = "data/sample_vid/upload." + vid_bytes.name.split('.')[-1]
+            # with open(vid_file, 'wb') as out:
+            #     out.write(vid_bytes.read())
 
-    if vid_file:
-        cap = cv2.VideoCapture(vid_file)
+    if vid_file or tfile:
+        cap = cv2.VideoCapture(tfile.name)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = 0
