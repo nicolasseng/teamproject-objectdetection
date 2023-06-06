@@ -196,6 +196,23 @@ def webcam():
     vid_cap.release() """
 
 
+# Offline Data loading
+def offline_data(model):
+    # Load the model.
+    model = YOLO('yolov8n.pt')
+
+    # Training.
+    results = model.train(
+        data='data.yaml',
+        imgsz=1280,
+        epochs=1,
+        batch=8,
+        name='yolov8n_v8_50e'
+    )
+
+    return results
+
+
 def run_yolov8():
     # global variables
     global model, confidence, classes
@@ -241,7 +258,7 @@ def run_yolov8():
 
     # input options
     input_option = st.sidebar.radio(
-        "Select input type: ", ['image', 'video', 'webcam', "YouTube Video"])
+        "Select input type: ", ['image', 'video', 'webcam', "YouTube Video", "Offline Data"])
 
     # input src option
     if input_option == "image" or input_option == "video":
@@ -256,6 +273,15 @@ def run_yolov8():
         webcam()
     elif input_option == 'YouTube Video':
         youtube()
+    elif input_option == "Offline Data":
+        st.subheader("Offline Data Loading")
+        st.write("This option will train the YOLO model using offline data.")
+        st.write("Please make sure to provide the required data.yaml file.")
+        st.write("Click the 'Train Model' button to start training.")
+
+        if st.button("Train Model"):
+            offline_data(model)
+            st.write("Training complete!")
 
 
 if __name__ == "__main__":
