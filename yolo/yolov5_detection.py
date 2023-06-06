@@ -7,19 +7,16 @@ import streamlit as st
 
 class ObjectDetection:
     """
-    Class implements Yolo5 model to make inferences on a youtube video using OpenCV.
+    Class implements Yolo5 model using OpenCV and pytorch.
     """
 
     def __init__(self):
         """
-        Initializes the class with youtube url and output file.
-        :param url: Has to be as youtube URL,on which prediction is made.
-        :param out_file: A valid output file name.
+        Initializes the class 
         """
         self.model = self.load_model()
         self.classes = self.model.names
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print("\n\nDevice Used:", self.device)
+        self.device = 'cpu'
 
     def load_model(self):
         """
@@ -73,7 +70,7 @@ class ObjectDetection:
 
         return frame
 
-    def detect_video(self, video_path):
+    def detect_input(self, video_path):
         """
         Reads frames from a video file and detects objects in each frame.
         :param video_path: Path to the video file.
@@ -99,51 +96,9 @@ class ObjectDetection:
         cap.release()
         cv2.destroyAllWindows()
 
-    def detect_webcam(self):
-        """
-        Reads frames from the webcam and detects objects in each frame.
-        :return: None
-        """
-        cap = cv2.VideoCapture(0)
-
-        while cap.isOpened():
-            start_time = time.perf_counter()
-            ret, frame = cap.read()
-            if not ret:
-                break
-            results = self.score_frame(frame)
-            frame = self.plot_boxes(results, frame)
-            end_time = time.perf_counter()
-            fps = 1 / np.round(end_time - start_time, 3)
-            cv2.putText(frame, f'FPS: {int(fps)}', (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 2)
-            cv2.imshow("img", frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        cap.release()
-        cv2.destroyAllWindows()
-
-    def __call__(self, input_source):
-        """
-        This function is called when the class is executed. It runs the loop to read frames from the specified input
-        source and detect objects in each frame.
-        :param input_source: 'video' for video file or 'webcam' for webcam input.
-        :return: void
-        """
-        if input_source == 'video':
-            video_path = 'test.mp4'  # Replace with the actual path to your video file.
-            self.detect_video(video_path)
-        elif input_source == 'webcam':
-            self.detect_webcam()
-        else:
-            print("Invalid input source!")
-
-
-# Create a new object and execute.
-detection = ObjectDetection()
 
 def run_yolo():
+    detection = ObjectDetection()
     st.title("Object Detection with YOLOv5")
     st.header("Press q to close pop up window")
     input_source = st.sidebar.radio("Select Input Source", ("Video", "Webcam"))
@@ -168,9 +123,10 @@ def run_yolo():
 
         if input_source == "Video" and uploaded_file is not None:
             with st.spinner("Processing video..."):
-                detection.detect_video(video_path)
+                detection.detect_input(video_path)
         else:
             with st.spinner("Processing webcam..."):
-                detection.detect_webcam()
+                video_path = 0
+                detection.detect_input(video_path)
 
         st.success("Object detection completed.")
