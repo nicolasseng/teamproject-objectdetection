@@ -61,12 +61,10 @@ def video_input(data_src):
         if vid_bytes:
             tfile = tempfile.NamedTemporaryFile(delete=False)
             tfile.write(vid_bytes.read())
-            # vid_file = "data/sample_vid/upload." + vid_bytes.name.split('.')[-1]
-            # with open(vid_file, 'wb') as out:
-            #     out.write(vid_bytes.read())
+            vid_file = tfile.name
 
-    if vid_file or tfile:
-        cap = cv2.VideoCapture(tfile.name)
+    if vid_file:
+        cap = cv2.VideoCapture(vid_file)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = 0
