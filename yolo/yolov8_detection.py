@@ -203,7 +203,7 @@ def offline_data(model):
 
     # Training.
     results = model.train(
-        data='data.yaml',
+        data='C:/Users/frede/Documents/Teamprojekt/teamproject-objectdetection/yolo/data.yaml', # your path
         imgsz=1280,
         epochs=1,
         batch=8,
