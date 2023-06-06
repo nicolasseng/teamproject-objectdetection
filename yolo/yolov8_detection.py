@@ -2,12 +2,21 @@ import glob
 import time
 
 import cv2
+import pafy
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 from ultralytics.yolo.v8.detect.predict import DetectionPredictor
 
 confidence = 0.25
+
+def infer_image(frame, output):
+    frame = cv2.resize(frame, (720, int(720*(9/16))))
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    res = model.predict(frame, conf=confidence, classes=classes)
+    res_plotted = res[0].plot()
+    output.image(res_plotted, caption="Detected Video", use_column_width=True)
+
 
 def image_input(data_src):
     img_file = None
@@ -31,7 +40,6 @@ def image_input(data_src):
             boxes = res[0].boxes
             res_plotted = res[0].plot()[:, :, ::-1]
             st.image(res_plotted, caption="Detected Image", use_column_width=True)
-
             try:
                 with st.expander("Detection Results"):
                     for box in boxes:
@@ -75,20 +83,17 @@ def video_input(data_src):
         curr_time = 0
         while cap.isOpened():
             ret, frame = cap.read()
-            if not ret:
+            if ret:
+                infer_image(frame, output)
+                curr_time = time.time()
+                fps = 1 / (curr_time - prev_time)
+                prev_time = curr_time
+                st1_text.markdown(f"**{height}**")
+                st2_text.markdown(f"**{width}**")
+                st3_text.markdown(f"**{fps:.2f}**")
+            else:
                 st.write("Can't read frame, stream ended? Exiting ....")
                 break
-            frame = cv2.resize(frame, (720, int(720*(9/16))))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            res = model.predict(frame, conf=confidence, classes=classes)
-            res_plotted = res[0].plot()
-            output.image(res_plotted, caption="Detected Video", use_column_width=True)
-            curr_time = time.time()
-            fps = 1 / (curr_time - prev_time)
-            prev_time = curr_time
-            st1_text.markdown(f"**{height}**")
-            st2_text.markdown(f"**{width}**")
-            st3_text.markdown(f"**{fps:.2f}**")
 
         cap.release()
 
@@ -119,6 +124,42 @@ def webcam():
     curr_time = 0
     while cap.isOpened():
         ret, frame = cap.read()
+        if ret:
+            infer_image(frame, output)
+            curr_time = time.time()
+            fps = 1 / (curr_time - prev_time)
+            prev_time = curr_time
+            st1_text.markdown(f"**{height}**")
+            st2_text.markdown(f"**{width}**")
+            st3_text.markdown(f"**{fps:.2f}**")
+        else:
+            st.write("Can't read frame, stream ended? Exiting ....")
+            break
+
+    cap.release()
+
+# Does not work yet
+""" def youtube():
+    source_youtube = st.sidebar.text_input("YouTube url")
+    video = pafy.new(source_youtube)
+    best = video.getbest(preftype="mp4")
+    vid_cap = cv2.VideoCapture(best.url)
+    width = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    st_frame = st.empty()
+    fps = 0
+    st1, st2, st3 = st.columns(3)
+    with st1:
+        st.markdown("## Height")
+        st1_text = st.markdown(f"{height}")
+    with st2:
+        st.markdown("## Width")
+        st2_text = st.markdown(f"{width}")
+    with st3:
+        st.markdown("## FPS")
+        st3_text = st.markdown(f"{fps}")
+    while(vid_cap.isOpened()):
+        ret, frame = vid_cap.read()
         if not ret:
             st.write("Can't read frame, stream ended? Exiting ....")
             break
@@ -126,15 +167,15 @@ def webcam():
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         res = model.predict(frame, conf=confidence, classes=classes)
         res_plotted = res[0].plot()
-        output.image(res_plotted, caption="Detected Video", use_column_width=True)
+        st_frame.image(res_plotted, caption="Detected Video", use_column_width=True)
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)
         prev_time = curr_time
         st1_text.markdown(f"**{height}**")
         st2_text.markdown(f"**{width}**")
         st3_text.markdown(f"**{fps:.2f}**")
+    vid_cap.release() """
 
-    cap.release()
 
 def run_yolov8():
     # global variables
@@ -160,7 +201,7 @@ def run_yolov8():
     st.sidebar.markdown("---")
 
         # input options
-    input_option = st.sidebar.radio("Select input type: ", ['image', 'video', 'webcam'])
+    input_option = st.sidebar.radio("Select input type: ", ['image', 'video', 'webcam', "YouTube Video"])
 
     # input src option
     if input_option == "image" or input_option == "video":
@@ -172,6 +213,8 @@ def run_yolov8():
         video_input(data_src)
     elif input_option == 'webcam':
         webcam()
+    elif input_option == 'YouTube Video':
+        youtube()
 
 
 if __name__ == "__main__":
