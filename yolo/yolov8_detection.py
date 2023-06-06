@@ -1,8 +1,10 @@
 import glob
+import tempfile
 import time
 
 import cv2
 import pafy
+import PIL
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
@@ -28,8 +30,7 @@ def image_input(data_src):
     else:
         img_bytes = st.sidebar.file_uploader("Upload an image", type=['png', 'jpeg', 'jpg'])
         if img_bytes:
-            img_file = "data/uploaded_data/upload." + img_bytes.name.split('.')[-1]
-            Image.open(img_bytes).save(img_file)
+            img_file = PIL.Image.open(img_bytes)
 
     if img_file:
         col1, col2 = st.columns(2)
@@ -51,18 +52,21 @@ def image_input(data_src):
 
 def video_input(data_src):
     vid_file = None
+    tfile = None
     if data_src == 'Sample data':
         vid_file = "data/sample_vid/sample.mp4"
     else:
         st.spinner("Waiting for your upload...")
         vid_bytes = st.sidebar.file_uploader("Upload a video", type=['mp4', 'mpv', 'avi'])
         if vid_bytes:
-            vid_file = "data/sample_vid/upload." + vid_bytes.name.split('.')[-1]
-            with open(vid_file, 'wb') as out:
-                out.write(vid_bytes.read())
+            tfile = tempfile.NamedTemporaryFile(delete=False)
+            tfile.write(vid_bytes.read())
+            # vid_file = "data/sample_vid/upload." + vid_bytes.name.split('.')[-1]
+            # with open(vid_file, 'wb') as out:
+            #     out.write(vid_bytes.read())
 
-    if vid_file:
-        cap = cv2.VideoCapture(vid_file)
+    if vid_file or tfile:
+        cap = cv2.VideoCapture(tfile.name)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = 0
