@@ -9,6 +9,8 @@ import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 from ultralytics.yolo.v8.detect.predict import DetectionPredictor
+import os
+import modules.moduleFileManagement
 
 confidence = 0.25
 
@@ -203,12 +205,12 @@ def offline_data(model):
 
     # Training.
     results = model.train(
-        data='C:/Users/frede/Documents/Teamprojekt/teamproject-objectdetection/yolo/data.yaml', # your path
+        data=os.path.join(os.path.dirname(__file__), "data.yaml"),
         imgsz=1280,
         epochs=1,
         batch=8,
         name='yolov8n_v8_50e'
-    )
+        )
 
     return results
 
