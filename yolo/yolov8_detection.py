@@ -240,19 +240,14 @@ def run_yolov8():
 
     st.sidebar.markdown("---")
 
-    yolo_model_selection = st.sidebar.radio(
-        "Select Yolov8 Model", ("YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"))
+    model_options = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
 
-    if yolo_model_selection == "YOLOv8n":
-        yolo_model = "yolov8n.pt"
-    elif yolo_model_selection == "YOLOv8s":
-        yolo_model = "yolov8s.pt"
-    elif yolo_model_selection == "YOLOv8m":
-        yolo_model = "yolov8m.pt"
-    elif yolo_model_selection == "YOLOv8l":
-        yolo_model = "yolov8l.pt"
-    elif yolo_model_selection == "Custom":
+    yolo_model_selection = st.sidebar.selectbox("Select Yolov8 Model", model_options)
+
+    if yolo_model_selection == "Custom":
         yolo_model = "C:/Users/frede/Documents/new_team/runs/detect/yolov8n_v8_50e/weights/best.pt"  # your path
+    else:
+        yolo_model = f"yolov8{yolo_model_selection.lower()[6:]}.pt"
 
     model = load_model(yolo_model)
 
