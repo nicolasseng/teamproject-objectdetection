@@ -200,7 +200,7 @@ def webcam():
 
 
 # Offline Data loading
-def offline_data(model):
+def trainModel(model):
     # Load the model.
     model = YOLO('yolov8n.pt')
     if modules.moduleFileManagement.readFile('yolov8_config.yaml') == 'file not found':
@@ -216,6 +216,20 @@ def offline_data(model):
         )
 
     return results
+
+
+def offlineData():
+    st.subheader("Offline Data Loading")
+    st.write("This option will train the YOLO model using offline data.")
+    st.write("Please make sure to provide the required data.yaml file.")
+    st.write("Click the 'Train Model' button to start training.")
+
+    if st.button("Train Model"):
+        try:
+            trainModel(model)
+            st.write("Training complete!")
+        except RuntimeError:
+            st.error('No data set provided or the "data" folder is not unzipped')
 
 
 def run_yolov8():
@@ -243,19 +257,18 @@ def run_yolov8():
 
     st.sidebar.markdown("---")
 
-    yolo_model_selection = st.sidebar.radio(
-        "Select Yolov8 Model", ("YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"))
+    model_options = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
 
-    if yolo_model_selection == "YOLOv8n":
-        yolo_model = "yolov8n.pt"
-    elif yolo_model_selection == "YOLOv8s":
-        yolo_model = "yolov8s.pt"
-    elif yolo_model_selection == "YOLOv8m":
-        yolo_model = "yolov8m.pt"
-    elif yolo_model_selection == "YOLOv8l":
-        yolo_model = "yolov8l.pt"
-    elif yolo_model_selection == "Custom":
-        yolo_model = "C:/Users/frede/Documents/new_team/runs/detect/yolov8n_v8_50e/weights/best.pt"  # your path
+    yolo_model_selection = st.sidebar.selectbox("Select Yolov8 Model", model_options)
+
+    if yolo_model_selection == "Custom":
+        yolo_model = modules.moduleFileManagement.gatherFilePath('**/best.pt') 
+    else:
+        yolo_model = f"yolov8{yolo_model_selection.lower()[6:]}.pt"
+
+    if not os.path.exists(yolo_model):
+        st.error(f'Go to Offline Data to train your own data set or unzip the "runs" folder')
+        return
 
     model = load_model(yolo_model)
 
@@ -279,14 +292,8 @@ def run_yolov8():
     elif input_option == 'YouTube Video':
         youtube()
     elif input_option == "Offline Data":
-        st.subheader("Offline Data Loading")
-        st.write("This option will train the YOLO model using offline data.")
-        st.write("Please make sure to provide the required data.yaml file.")
-        st.write("Click the 'Train Model' button to start training.")
+        offlineData()
 
-        if st.button("Train Model"):
-            offline_data(model)
-            st.write("Training complete!")
 
 
 if __name__ == "__main__":
