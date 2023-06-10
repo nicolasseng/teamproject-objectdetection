@@ -11,6 +11,7 @@ from ultralytics import YOLO
 from ultralytics.yolo.v8.detect.predict import DetectionPredictor
 import os
 import modules.moduleFileManagement
+from .yamlCreation import createYaml
 
 confidence = 0.25
 
@@ -202,10 +203,12 @@ def webcam():
 def offline_data(model):
     # Load the model.
     model = YOLO('yolov8n.pt')
+    if modules.moduleFileManagement.readFile('yolov8_config.yaml') == 'file not found':
+        createYaml()
 
     # Training.
     results = model.train(
-        data=os.path.join(os.path.dirname(__file__), "data.yaml"),
+        data=modules.moduleFileManagement.gatherFilePath('**/yolov8_config.yaml'),
         imgsz=1280,
         epochs=1,
         batch=8,

@@ -1,5 +1,0 @@
-train: C:\Users\frede\Documents\Teamprojekt\teamproject-objectdetection\yolo\data\train\images # your path 
-val: C:\Users\frede\Documents\Teamprojekt\teamproject-objectdetection\yolo\data\valid\images # your path 
-
-nc: 5 # number of classes 
-names: ['Helmet', 'Goggles', 'Jacket', 'Gloves', 'Footwear'] # name of the classes
