@@ -20,6 +20,12 @@ MSSDResizeFactor:int = 300
 
 MSSDDisplayOpacity: float = 0.3
 
+# -- / settings for Drawing Elements
+
+RectangleWidth = 2
+ImageTextColor = (0,255,0)
+
+
 if __name__ =="__main__": 
     
     exit("not meant to be run")

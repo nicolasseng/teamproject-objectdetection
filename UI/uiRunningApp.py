@@ -11,11 +11,17 @@ import streamlit as st
 from PIL import Image
 from streamlit_option_menu import option_menu
 
-import modules.moduleDetectionMobileNetSSD as MSSD
+
+# for video input --> not the optimal solution
+import cv2 as opencv
+
+
 # --- /
 # -- / internal imports 
+import modules.moduleDetectionMobileNetSSD as MSSD
 import settings.modelSettings as msettings
 from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
+
 
 # --- /
 # -- / 
@@ -49,7 +55,10 @@ def run_the_app():
         )
         classes = [model_names.index(name) for name in assigned_class]
     
-    if imageSource == FileSelection[0]:
+    # --- / 
+    # -- / formatting Main-window accordingly 
+    
+    if imageSource == FileSelection[0]: # sample images
         st.sidebar.markdown("### available demo images")
         #TODO add carousel of images available
         
@@ -57,7 +66,7 @@ def run_the_app():
         imagePath = gatherFilePath("**/sampleImg*.jpg")
         displayMainWindow(imagePath,confidence_threshold)
     
-    if imageSource == FileSelection[1]:
+    if imageSource == FileSelection[1]: # uploading images
         #style if Sources are uploads
         st.sidebar.markdown("### upload your image")
         # setting uploaded image as the one to display
@@ -65,15 +74,33 @@ def run_the_app():
         # waiting until file was uploaded 
         print("file was uploaded")
         displayMainWindow(imageUploaded,confidence_threshold)
+        
+    if imageSource == FileSelection[2]: # supplying video stream
+        st.sidebar.markdown("### starting and querying webcam")
+        print("running webcams")
+        displayMainWindowVideo(confidence_threshold)
+        
+
     
-    # defining Main windows
+def displayMainWindowVideo(confidence_threshold:float):
+    column1,column2 = st.columns(2)
+    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    # setting video input
+    VideoStream = opencv.VideoCapture(0)
+    result, initialFrame = VideoStream.read()
+    # empty image container to fill during runtime
+    displayedImage = st.image(initialFrame)
     
-    # gathering file to display:
-    #TODO add depency for selected image from carousel 
-    # imageDisplayed = gatherFilePath("**/sampleImg*.jpg")
     
-    # TODO insert model to process here // 
-    
+    with column1:
+        
+        displayedImage
+        # running model which will update the piped imageobject
+        MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,videoStream=VideoStream,streamlitOutput=displayedImage)
+
+        
+        
+        
     
 
 def displayMainWindow(imageUploaded,confidence_threshold:float):
@@ -86,27 +113,25 @@ def displayMainWindow(imageUploaded,confidence_threshold:float):
     imageProcessed = np.array(imageUploaded)
     imageUnprocessed = np.array(imageUploaded)
     
-    # loading model 
-    
-    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
-    imageProcessed = MSSD.runDnn(imageProcessed,loadedNet,confidence_threshold)
-    print("model done ")
-    
-    # displaying results 
     col1, col2 = st.columns(2)
     with col1:
-        st.image(
-            imageUnprocessed,
-            use_column_width="auto",
-            caption="Image without object detection",
-        )
-    with col2:
-        st.image(
-            imageProcessed,
-            use_column_width="auto",
-            caption="image with object detection"
-        )
+        # defining Images to set 
+        stUnprocessImage = st.image(
+                imageUnprocessed,
+                use_column_width="auto",
+                caption="Image without object detection",
+            )
     
+    with col2:
+        # setting default value first 
+        stProcessedImage = st.image(
+                imageUnprocessed,
+            )
+    
+    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    
+    # running model which will update the piped imageobject
+    MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,imageObj=imageProcessed,streamlitOutput=stProcessedImage)
 
 
 def uploadImage():
