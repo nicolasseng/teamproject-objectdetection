@@ -88,18 +88,12 @@ def displayMainWindowVideo(confidence_threshold:float):
     
     
     with column1:
+        
         displayedImage
+        # running model which will update the piped imageobject
+        MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,videoStream=VideoStream,streamlitOutput=displayedImage)
+
         
-    
-    while True:
-        
-        result,frame = VideoStream.read()
-        # imageProcessed = st.image([])
-        resultImage = MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,imageObj=frame)
-        imageProcessed = opencv.cvtColor(resultImage,opencv.COLOR_BGR2RGB)
-        
-        # piping result to displayedImage
-        displayedImage.image(imageProcessed)
         
         
     
@@ -114,27 +108,25 @@ def displayMainWindow(imageUploaded,confidence_threshold:float):
     imageProcessed = np.array(imageUploaded)
     imageUnprocessed = np.array(imageUploaded)
     
-    # loading model 
-    
-    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
-    imageProcessed = MSSD.runDnn(imageProcessed,loadedNet,confidence_threshold)
-    print("model done ")
-    
-    # displaying results 
     col1, col2 = st.columns(2)
     with col1:
-        st.image(
-            imageUnprocessed,
-            use_column_width="auto",
-            caption="Image without object detection",
-        )
-    with col2:
-        st.image(
-            imageProcessed,
-            use_column_width="auto",
-            caption="image with object detection"
-        )
+        # defining Images to set 
+        stUnprocessImage = st.image(
+                imageUnprocessed,
+                use_column_width="auto",
+                caption="Image without object detection",
+            )
     
+    with col2:
+        # setting default value first 
+        stProcessedImage = st.image(
+                imageUnprocessed,
+            )
+    
+    loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    
+    # running model which will update the piped imageobject
+    MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,imageObj=imageProcessed,streamlitOutput=stProcessedImage)
 
 
 def uploadImage():

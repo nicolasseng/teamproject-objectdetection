@@ -5,29 +5,23 @@ Primarily based on a pre-trained model utilizing Mobilenet-SSD, a single stage n
 
 # --- / 
 # -- / external imports 
+from typing import Optional
+from altair import Undefined
 import numpy as np 
 import cv2 as opencv
+from streamlit.elements.color_picker import ColorPickerMixin
 from modules.moduleFileManagement import gatherFilePath
 
 #import os
 
 # --- / 
 # -- / internal imports 
-from settings.modelSettings import MSSDResizeFactor,MSSDDisplayOpacity
+from settings.modelSettings import MSSDResizeFactor,MSSDDisplayOpacity,ImageTextColor, RectangleWidth
+
 
 # --- / 
 # -- / 
-
-# --- / 
-# -- / necessities for given image : 
-# image file itself --> path 
-# directory leading to YOLO instance --> pre-trained 
-# confidence level to deploy 0.4 for at least 40% confidence / 
-# threshold for non-maxima suppression // 
-
-# --- / 
-# -- / 
-def generateLabelColors(len:int):
+def generateLabelColors(len:int) -> list:
     '''
     returns List of len:int containing colors in format (r,g,b)
     - where r,g,b in range of (0 - 255) 
@@ -36,24 +30,24 @@ def generateLabelColors(len:int):
     to obtain 2 colors represented in form of [(R,G,B),(R1,G1,B2,)]:
     generateLabelColors(2) -> will return np.array type
     '''
-    # TODO better returntype!
-    listOfColors = np.random.uniform(0,255, size=(len,3)   )# creating n 3-tuples of random colors 
-    return listOfColors
+    listOfColor:list = [ [ round(np.random.uniform(0,255),2) for i in range(0,3) ] for i in range(0,len) ]
+    return listOfColor
 
 # --- / 
 # -- / 
 
-
 def loadModel(modelPath:str,modelWeight:str) -> object:
     ''' 
     with given paths load and return neural net with cv2
+    **raises Exception in case of failed loading operation**
     @param modelPath String = contains path to model in txt form 
     @param modelWeight String = contains path to pretrained weight of network 
     @return dnn Object containing loaded network
     ''' 
-    # TODO exeption handling
-    dnnModel = opencv.dnn.readNetFromCaffe(modelPath,modelWeight);
-    print("model loaded")
+    try:
+        dnnModel = opencv.dnn.readNetFromCaffe(modelPath,modelWeight);
+    except: 
+        raise Exception("Model could not be load!")
     return dnnModel
 
 # --- / 
@@ -63,7 +57,6 @@ def LoadImage(imagePath:str):
     '''
     extracting image from given path 
     '''
-    #TODO add exception handling 
     try:
         Img = opencv.imread(imagePath)
     except: 
@@ -87,39 +80,55 @@ def ProcessImage(imageObject:object):
     # resizing it and maintaining images by applying a _mean subtraction_
     Imgblob = opencv.dnn.blobFromImage(ImgFrame, 0.007843, (300, 300), (127.5, 127.5, 127.5), False)
     return Imgblob
-# --- / 
-# -- / gathering dimensions of supplied image 
-
-def gatherImageDimensions(imageObject:object) :
-    (h,w) = imageObject.shape[:2]
-    return (h,w)    
-
+        
 # --- / 
 # -- / wrapper for Dnn 
 
-def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,imagePath:str="none",imageObj=None):
+def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,streamlitOutput,imageObj=Optional,videoStream=Optional,suppliedObjectClasses:dict=Optional):
     ''' 
     creates wrapper for "runDnn"
     @param neuralNet = initialized neural network object 
     @param requiredConfidence:float = float defining required confidence 
-    @param imagePath = if no object is available, take a path and query it 
-    @param imageObj = if no path was supplied we take an object
-    
-    making it possible to either supply an image or a path 
+    @param imageObj = imageObject previously converted to numpy.array (by streamlit or similar application)
     '''
-    # checking whether an image was supplied or not 
-    if imagePath != "none":
-        # gathering image object 
-        imgQueried =LoadImage(imagePath)
-        return runDnn(imgQueried,neuralNet,requiredConfidence)
-    else:
-        # no path, so object was given 
-        return runDnn(imageObj,neuralNet,requiredConfidence)
+    
+    
+    # setting default value for objectClasses, if they are not set
+    if suppliedObjectClasses is wrapperRunningDnn.__defaults__[2]:
+        objectClasses:dict = { 0: 'background',
+        1: 'aeroplane', 2: 'bicycle', 3: 'bird', 4: 'boat',
+        5: 'bottle', 6: 'bus', 7: 'car', 8: 'cat', 9: 'chair',
+        10: 'cow', 11: 'diningtable', 12: 'dog', 13: 'horse',
+        14: 'motorbike', 15: 'person', 16: 'pottedplant',
+        17: 'sheep', 18: 'sofa', 19: 'train', 20: 'tvmonitor' }
+    else: 
+        objectClasses:dict = suppliedObjectClasses
+    
+    if videoStream is not wrapperRunningDnn.__defaults__[1] : 
+        ObjectColors = generateLabelColors(len(objectClasses))
+        # running in continous loop for capturing images and processing them 
+        #TODO implement better stopping --> shouldnt be a problem because streamlit reruns the whole python script anyway! 
+        while True:
+            result,frame = videoStream.read()
+            DetectionResults = runDnn(frame,neuralNet,requiredConfidence,objectClasses,ObjectColors)
+            
+            # correcting color mismatch after processing with opencv
+            resultedImage = opencv.cvtColor(DetectionResults['image'],opencv.COLOR_BGR2RGB)
+            streamlitOutput.image(resultedImage)
+    
+    if imageObj is not  wrapperRunningDnn.__defaults__[0]: 
+        # running Dnn on supplied image
+        DetectionResults = runDnn(imageObj,neuralNet,requiredConfidence,objectClasses)
+        streamlitOutput.image(DetectionResults['image'],
+                                use_column_width="auto",
+                                caption="Image  object detection",
+                              )
+
 
 # --- / 
 # -- / running Dnn 
 
-def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
+def runDnn(imageObject,neuralNet:object,requiredConfidence:float,objectClasses:dict,ClassColor=None) -> dict:
     '''
     takes an imageObject, neural network object - initialized, and the required confidence to achieve for detected objects. 
     
@@ -127,106 +136,107 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float):
     loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
     MSSD.runDnn(gatherFilePath("**/unsplashHis.jpg"),loadedNet,0.1)
     '''    
-    #TODO Refactor into smaller portions 
-    # OCP !
-    
-    CLASSES:dict = { 0: 'background',
-    1: 'aeroplane', 2: 'bicycle', 3: 'bird', 4: 'boat',
-    5: 'bottle', 6: 'bus', 7: 'car', 8: 'cat', 9: 'chair',
-    10: 'cow', 11: 'diningtable', 12: 'dog', 13: 'horse',
-    14: 'motorbike', 15: 'person', 16: 'pottedplant',
-    17: 'sheep', 18: 'sofa', 19: 'train', 20: 'tvmonitor' }
-    COLORLABEL =generateLabelColors(len(CLASSES))
+    if ClassColor == None : 
+        ClassColor = generateLabelColors(len(objectClasses))
     
     # gathering image data 
-    imgQueried = imageObject  # setting obtained image directly
-    imageBlob = ProcessImage(imageObject) # resizing accordingly 
+    imageBlob = ProcessImage(imageObject) 
     
-    # setting scaling for better positioning of rectangles 
-    imgWidthFactor = imgQueried.shape[1]/MSSDResizeFactor
-    imgHeightFactor = imgQueried.shape[0]/MSSDResizeFactor
-    imgColumns:int = MSSDResizeFactor
-    imgRows:int = MSSDResizeFactor
-     
+    # pipe imageblob to neural net
     neuralNet.setInput(imageBlob)
-    
-    # looping over everything detected: 
     detectedObjects = neuralNet.forward()
     
-    #TODO extract to function ProcessdetectedObjects() or similar 
+    # iterate through all results
+    DetectionResults:dict = iterateDetectionResults(imageObject,
+                            detectedObjects,
+                            requiredConfidence,
+                            objectClasses,
+                            ClassColor
+                            )
+    
+    return DetectionResults
+    
+
+# --- / 
+# -- / 
+def addRectangle(imageObj,BoundingBoxCoords:dict, color):
+
+    # calculating position of rectangle corners
+    return opencv.rectangle( imageObj,
+                            (BoundingBoxCoords['xLeft'],
+                            BoundingBoxCoords['yLeft']),
+                            (BoundingBoxCoords['xRight'],
+                            BoundingBoxCoords['yRight']),
+                            color,RectangleWidth)
+    
+# --- /
+# -- / 
+def addLabel(imageObj,detectionBoundingBox:dict,Label:str,confidence:float,color):
+    
+    textLabel = "{}:{}".format(Label,str(confidence))
+    # print("prediction : {}".format(label))
+    
+    labelSize, maxLabelHeight = opencv.getTextSize(textLabel, opencv.FONT_HERSHEY_TRIPLEX, 1, 1)
+    
+    # defining coordinates for  
+    LabelBoxY = detectionBoundingBox['yLeft']- labelSize[1]
+    LabelLeftY = detectionBoundingBox['yLeft'] 
+    LabelRightX = detectionBoundingBox['xLeft']+ labelSize[0]
+    
+    # drawing rectangle around text 
+    opencv.rectangle(imageObj,(detectionBoundingBox['xLeft'],LabelBoxY), (LabelRightX,LabelLeftY),color,RectangleWidth)
+    
+    # drawing text above detected object 
+    opencv.putText(imageObj,textLabel, (detectionBoundingBox['xLeft'],LabelLeftY), opencv.FONT_HERSHEY_TRIPLEX,1,ImageTextColor,1,opencv.LINE_8,False)
+    
+    return imageObj
+ 
+# --- /
+# -- / 
+def iterateDetectionResults(imageObj,detectedObjects,requiredConfidence,objectClasses,ObjectClassColor):
+    
+    # list containing dictionary with their name : color
+    foundObjects:dict = {}
+    
     for prediction in range(detectedObjects.shape[2]):
         
         # extract confidence of prediction 
-        confidence = detectedObjects[0,0,prediction,2];
+        rawconfidence = detectedObjects[0,0,prediction,2];
+        confidence = round(rawconfidence,3)
         
-        # check whether confidence reaches set level or not 
         if confidence > requiredConfidence: 
             # extracting label of detected image
-            
             labelIndex = int(detectedObjects[0,0,prediction,1])
-        
-            #TODO refactor to displayRectangle()
-            # location of object in coordinates
-            cornerLeftX =int(int(detectedObjects[0, 0, prediction, 3] * imgColumns) * imgWidthFactor)
-            cornerLeftY =int( int(detectedObjects[0, 0, prediction, 4] * imgRows) * imgHeightFactor)
-            cornerRightX = int(int(detectedObjects[0, 0, prediction, 5] * imgColumns) * imgWidthFactor)
-            cornerRightY= int(int(detectedObjects[0, 0, prediction, 6] * imgRows) * imgHeightFactor)
-
+            
+            imgWidthFactor = imageObj.shape[1]/MSSDResizeFactor
+            imgHeightFactor = imageObj.shape[0]/MSSDResizeFactor
+            detectionBoundingBox:dict = {
+                "xLeft": int(int( detectedObjects[0,0,prediction,3] * MSSDResizeFactor) * imgWidthFactor ) ,
+                "yLeft":int(int(detectedObjects[0,0,prediction,4] * MSSDResizeFactor) * imgHeightFactor  ),
+                "xRight":int(int(detectedObjects[0,0,prediction,5] * MSSDResizeFactor) * imgWidthFactor ),
+                "yRight":int(int(detectedObjects[0,0,prediction,6] * MSSDResizeFactor) * imgHeightFactor ),
+            }
             
             # setting rectangle about found object 
-            opencv.rectangle( imgQueried, (cornerLeftX,cornerLeftY) , (cornerRightX,cornerRightY),COLORLABEL[labelIndex],3)
-            
-            # we now have to set and enable the given label and rectangle to be positioned and shown on our implementation
-            if labelIndex in CLASSES:
-                # TODO Additionally querying for Set Input CLASS --> Selection from Streamlit 
+            imageWithRect = addRectangle(imageObj,
+                                         detectionBoundingBox,
+                                         color=ObjectClassColor[labelIndex]
+                                         )
+                        
+            if labelIndex in objectClasses:
                 
                 # found label, now creating according text-outputs 
-                label = "{} => {}".format(CLASSES[labelIndex],str(confidence))
-                print("prediction : {}".format(label))
+                ObjectClassString = objectClasses[labelIndex]
                 
-                labelSize, maxLabelHeight = opencv.getTextSize(label, opencv.FONT_HERSHEY_TRIPLEX, 1, 1)
-                
-                # gathering point for positioning label accordingly
-                # deciding whether to take leftBottom corner for reference or label
-                cornerLeftY = max(cornerLeftY,labelSize[1])
-                # setting labelbox rectangle coordinates accordingly
-                # reference is drawn from bottom left corner 
-                LabelLeftY = cornerLeftY - labelSize[1]
-                LabelRightY = cornerLeftY + maxLabelHeight 
-                LabelRightX = cornerLeftX + labelSize[0]
-                LabelOffset = 5
-                # drawing LabelBox 
-                opencv.rectangle(imgQueried,(cornerLeftX,LabelLeftY-LabelOffset), (LabelRightX,cornerLeftY),COLORLABEL[labelIndex],2)
-                # setting Text into Box
-                # setting offset for Text to avoid clipping with frame
-                opencv.putText(imgQueried,label, (cornerLeftX,cornerLeftY-LabelOffset), opencv.FONT_HERSHEY_TRIPLEX,1,COLORLABEL[labelIndex],1,opencv.LINE_8,False)
-                
-    # return detection result as imageObject
-    return imgQueried 
+                # adding entry to dictionary to return! 
+                foundObjects[ObjectClassString] = ObjectClassColor[labelIndex] 
+                imageObj = addLabel(imageWithRect,detectionBoundingBox,ObjectClassString,confidence,ObjectClassColor[labelIndex])
     
+    Results:dict= {
+        "image": imageObj,
+        "foundObjects": foundObjects,
+    }
+    return  Results
 
-        
-        
-
-# --- /
-# -- / yet to be implemented
-# -- allows for displaying results locally in opencv window
-def runLocally():
-    ''' 
-    function taking and running a local object detection method so that its output is presented as new window
-    by opencv. 
-    
-    '''
-    opencv.namedWindow("frame",opencv.WINDOW_NORMAL)
-    return opencv.imshow("frame",imgQueried)
-    opencv.waitKey(0)
-    opencv.destroyAllWindows()
-
-# here static, in final product it should be constructed from streamlit checklist! 
-# constructing interface which will then supply the selected classes 
-# def SupplyClasses
-
-  
-    
 if __name__ =="__main__":
     exit("not meant to be run")
