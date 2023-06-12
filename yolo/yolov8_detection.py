@@ -1,17 +1,21 @@
+# --- / 
+# -- / external imports 
 import glob
 import tempfile
 import time
-
 import cv2
-import pafy
+# import pafy
 import PIL
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 from ultralytics.yolo.v8.detect.predict import DetectionPredictor
 import os
+
+# --- / 
+# -- / internal imports 
 import modules.moduleFileManagement
-from .yamlCreation import createYaml
+from modules.moduleYamlManagement import createYaml
 
 confidence = 0.25
 
@@ -232,6 +236,7 @@ def offlineData():
 
 def run_yolov8():
     # global variables
+    # TODO get rid of global variables!
     global model, confidence, classes
 
     st.title("Object Recognition Dashboard")

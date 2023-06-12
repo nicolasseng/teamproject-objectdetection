@@ -19,7 +19,12 @@ once everything was downloaded you are ready to run and explore our system.
 ## Executing webapplication : 
 
 To run our application, head to the root of our repo and execute in console: 
+
 ```bash 
-streamlit run FirstInterface.py
+streamlit run Main.py
 ```
 
+## Training your own Model : 
+we are providing the possibility to train your own model ( currently only yolov8) with given test-images.
+
+Instructions on how to train a model are found  [here](/docs/TrainingAModel.md)
