@@ -35,7 +35,7 @@ def readFile(filepath:str) -> Optional[str]:
 def gatherFilePath(queriedFilename:str) -> Optional[str]: 
     ''' 
     takes a string denoting filename, returns path of it, if found 
-    otherwise returns "none" as string
+    otherwise returns None
     
     Function searches relative from root of environment. 
     if searching for a file within 1 (or multiple) directories, add **/ to the query.

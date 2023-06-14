@@ -10,7 +10,7 @@ from typing import Optional
 import yaml
 # --- / 
 # -- / internal imports 
-from moduleFileManagement import createPath, gatherFolderPath
+from modules.moduleFileManagement import createPath, gatherFolderPath
 
 def createYaml():
     '''
@@ -34,6 +34,7 @@ def createYaml():
         os.makedirs(subfolder, exist_ok=True)
         
         # Construct the file path within the subfolder
+        
         file_path = os.path.join(subfolder, 'yolov8_config.yaml')
 
         with open(file_path, 'w') as file:

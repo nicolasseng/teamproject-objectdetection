@@ -13,7 +13,8 @@ import settings.uiSettings as UiSettings
 from modules.moduleShowReadMe import DisplayReadme
 from modules.moduleShowSourceCode import ShowSourceCode
 from UI.uiRunningApp import run_the_app
-from yolo.yolov8_detection import run_yolov8
+from UI.uiYolo import runYoloInterface
+
 
 
 # --- / 
@@ -44,7 +45,7 @@ def SelectProgramMode()  :
     elif app_mode == appModeSelection[3]:
         # showing source code for 
         ShowSourceCode()
-    elif app_mode == appModeSelection[4]:
+    # elif app_mode == appModeSelection[4]:
         #uploading files 
         exit()
 
