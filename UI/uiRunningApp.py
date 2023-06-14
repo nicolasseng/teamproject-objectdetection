@@ -21,6 +21,7 @@ import cv2 as opencv
 import modules.moduleDetectionMobileNetSSD as MSSD
 import settings.modelSettings as msettings
 from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
+from .uiModelComparison import compareModels
 
 
 # --- /
@@ -29,7 +30,7 @@ from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
 def run_the_app():
     st.sidebar.markdown("# Settings")
     #TODO refactor further
-    FileSelection:list =  ["sample image", "upload image","supply video"]
+    FileSelection:list =  ["sample image", "upload image","supply video", "compare"]
     imageSource = st.sidebar.radio(
         "Select file:",FileSelection
     )
@@ -79,6 +80,10 @@ def run_the_app():
         st.sidebar.markdown("### starting and querying webcam")
         print("running webcams")
         displayMainWindowVideo(confidence_threshold)
+
+    if imageSource == FileSelection[3]: # compare models 
+        st.sidebar.markdown("### upload your image and see how different models perform")
+        compareModels(confidence_threshold)
         
 
     
