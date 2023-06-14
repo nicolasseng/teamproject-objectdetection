@@ -202,6 +202,9 @@ def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,obje
     
     return True
 
+def wrapperVideo(loadedModel:object,objectClasses:list,requiredConfidence:float):
+    
+    
 
 # --- / 
 # -- / 

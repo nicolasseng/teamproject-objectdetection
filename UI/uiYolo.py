@@ -28,6 +28,9 @@ def runYoloInterface():
         'Confidence', min_value=0.1, max_value=1.0, value=.45)
     
     
+    # TODO refactor
+    # -- / 
+    # loads model 
     try:
         defaultModelPath:str = gatherFilePath("**/yolov8s.pt")
     except:
@@ -47,9 +50,10 @@ def runYoloInterface():
         classes:list = list(model.names.keys())
 
     st.sidebar.markdown("---")
-
+    
+    # -- / 
+    # gathering yolo model 
     model_options = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
-
     yolo_model_selection:str = st.sidebar.selectbox("Select Yolov8 Model", model_options)
 
     if yolo_model_selection == "Custom":
@@ -78,33 +82,76 @@ def runYoloInterface():
     input_option = st.sidebar.radio(
         "Select input type: ", ['image', 'video', 'webcam', "YouTube Video", "Offline Data"])
 
+    # TODO refactor to separate function! 
+    # TODO refactor to list selection
     # input src option
+    SourceSelection:list =  ['Sample data', 'Upload your own data']
     if input_option == "image" or input_option == "video":
-        data_src = st.sidebar.radio("Select input source: ", [
-                                    'Sample data', 'Upload your own data'])
+        data_src = st.sidebar.radio("Select input source: ",SourceSelection )
 
+    
+    # gathering image
+    # TODO refactor to separate function!
     if input_option == 'image':
-        img_file = None
-        if data_src == 'Sample data':   
-            # get all sample images
-            img_path = glob.glob('data/sample_img/*')
-            img_slider = st.slider("Select a test image.",
-                                min_value=1, max_value=len(img_path), step=1)
-            img_file = img_path[img_slider - 1]
-        else:
-            img_bytes = st.sidebar.file_uploader(
-                "Upload an image", type=['png', 'jpeg', 'jpg'])
-            if img_bytes:
-                img_file = PIL.Image.open(img_bytes)
-
-    # once image file was loaded or not 
-        runYoloOnImage(model,classes,data_src,confidence)
-        image_input(data_src,confidence)
+       image_input(model,classes,data_src,confidence)
+        # image_input(data_src,confidence)
+    
     elif input_option == 'video':
-        video_input(data_src,confidence)
+        pass
+        # video_input(data_src,confidence)
+    
     elif input_option == 'webcam':
-         webcam()
+        wrapperVideo(model,classes,confidence)
+    
+        #  webcam()
     # elif input_option == 'YouTube Video':
         # youtube()
+    
     elif input_option == "Offline Data":
-        offlineData()
+        pass
+        # offlineData()
+
+# --- / 
+# -- / 
+# TODO refactor to another file --> does not belong here! 
+# TODO add function description 
+# TODO add signature 
+def image_input(loadedModel:object,objectClasses:list,data_src,confidence:float):
+     
+    # imgPath = None
+    
+    # TODO get rid of sentinel values
+    if data_src == "Sample data":
+        selectedImage = st.sidebar.file_uploader(
+            "Upload an image", type=['png', 'jpeg', 'jpg'])
+        # TODO improve
+        if selectedImage == None:
+            selectedImage = gatherFilePath("**/sampleImg.jpg")
+    else: 
+        # get all sample images
+        sampleImagePath:str =  gatherFilePath("**/sample_img")
+        img_slider = st.slider("Select a test image.",
+                                min_value=1, 
+                                max_value=len(sampleImagePath),
+                                step=1)
+        # taking selected image 
+        selectedImage = sampleImagePath[img_slider - 1] # 
+        # once image file was loaded or not 
+    
+    # once image file was loaded or not 
+    if selectedImage:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(selectedImage, caption="Selected Image", use_column_width=True)
+        with col2:
+            result = runYoloOnImage(loadedModel,objectClasses,selectedImage,confidence)
+            st.image(result['image'], caption="Detected Image",
+                     use_column_width=True)
+            try:
+                with st.expander("Detection Results"):
+                    for box in result['foundObjects']:
+                        st.write(box)
+            except Exception as ex:
+                st.write("No image is uploaded yet!")
+
+
