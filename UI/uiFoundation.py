@@ -5,7 +5,7 @@ File contains basic structure of Ui, which is supplied by Streamlit
 
 # --- / 
 # -- / external imports 
-from streamlit_option_menu import option_menu as stOptionMenu
+from streamlit_option_menu import option_menu
 
 # --- / 
 # -- / internal imports 
@@ -24,13 +24,13 @@ def SelectProgramMode()  :
     function displaying a streamlit menu with several options
     upon selection of a module to execute, said module is executed 
     '''
-    appModeSelection = ["Readme File", "Run SSD", "Yolov8", "Show the Code", "Upload File[not used]"];
-    appModeSelectionIcons = ["book", "display", "download", "cloud-upload"],
-    app_mode = stOptionMenu(
+    appModeSelection = ["Readme File", "Run SSD", "Yolov8", "Show the Code"];
+    appModeSelectionIcons = ["book", "display", "display", "cloud-download"]
+    app_mode = option_menu(
         None, 
         appModeSelection,
         orientation="horizontal",
-        icons=appModeSelectionIcons,
+        icons=appModeSelectionIcons, menu_icon="cast"
     ) 
     # selecting appropiate mode: 
     if app_mode == appModeSelection[0]:
@@ -45,9 +45,6 @@ def SelectProgramMode()  :
     elif app_mode == appModeSelection[3]:
         # showing source code for 
         ShowSourceCode()
-    # elif app_mode == appModeSelection[4]:
-        #uploading files 
-        exit()
 
 # --- / 
 # -- / 
