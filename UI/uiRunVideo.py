@@ -5,6 +5,7 @@ It supplies the structure of our webapp in order to supply a model
 
 # --- /
 # -- / external imports 
+from typing import Optional
 import cv2 
 import streamlit as st
 import time
@@ -16,11 +17,14 @@ from modules.moduleYoloV8 import yoloOnVideo
 # -- / internal imports 
 
 
+# --- / 
+# -- / 
 # TODO requires annotation and function signature 
 # TODO requires better / more descriptive name 
 # TODO add description and example usage ? 
-
-def interfaceVideo(loadedModel,videoStream,objectClasses,requiredConfidence):
+# TODO videoObject should be a string or path --> we have to decide whether
+# to directly pipe a stream of data or just the indicator for doing so 
+def interfaceVideo(loadedModel:object,videoObject:Optional[object],objectClasses:list,requiredConfidence:float) -> Optional[bool]:
     ''' 
     this function takes a loaded model to use --> could be any yoloV8 or similar
     further takes a video stream( either Webcam or supplied video!) and runs object detection with
@@ -28,8 +32,14 @@ def interfaceVideo(loadedModel,videoStream,objectClasses,requiredConfidence):
     
     outputs the results with Streamlit
     '''
-    # opening video stream <
-    # videoStream = cv2.Videocapture(0) #
+    # opening video stream 
+    if videoObject == None:
+        # running on webcam 
+        videoStream = cv2.VideoCapture(0)
+    else:
+        videoStream = cv2.VideoCapture(videoObject)
+        
+    
     custom_size = st.sidebar.checkbox("Custom frame size")
     width = int(videoStream.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(videoStream.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -40,7 +50,8 @@ def interfaceVideo(loadedModel,videoStream,objectClasses,requiredConfidence):
         height = st.sidebar.number_input(
             "Height", min_value=120, step=20, value=height)
     
-    # creating three columns 
+    # TODO refactor to extra function 
+    # could be drawTable(colAmount,content or smth,...)
     col0, col1, col2 = st.columns(3)
     with col0:
         st.markdown("## Height")
@@ -60,7 +71,7 @@ def interfaceVideo(loadedModel,videoStream,objectClasses,requiredConfidence):
     
     # loading model before use ! 
     
-    terminatedVideoStream = yoloOnVideo(loadedModel,videoStream,output,col2_text,object,requiredConfidence)
+    terminatedVideoStream = yoloOnVideo(loadedModel,videoStream,output,col2_text,objectClasses,requiredConfidence)
     if terminatedVideoStream: 
         # closing videoStream
         videoStream.release()

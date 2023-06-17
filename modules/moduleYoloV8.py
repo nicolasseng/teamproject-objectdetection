@@ -9,9 +9,8 @@ necesssary and is later piped or accessed by the UI.
 from typing import Optional
 import cv2 
 import time
+from matplotlib.cm import np
 from ultralytics import YOLO
-from ultralytics.yolo.v8.detect.predict import DetectionPredictor
-import os
 # TODO to be removed once refactored! 
 import streamlit as st
 # TODO remove those libraries because they are not needed here --> at least should not be 
@@ -21,13 +20,13 @@ import tempfile
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import gatherFilePath
+from modules.moduleFileManagement import gatherFilePath, readFile
 from modules.moduleYamlManagement import createYaml
 
 # --- / 
 # -- / 
 
-#TODO DEPRECATED ?? 
+#TODO DEPRECATED !
 def load_model(yolo_model:str):
     '''
     takes string to trained yolo detection model 
@@ -59,7 +58,7 @@ def initializeModel(selectedModel:str) -> object:
 
 
 
-# TODO DEPRECATED
+# TODO DEPRECATED !
 def infer_image(loadedModel,confidence:float,frame,objectClass,requiredConfidence, output):
     frame = cv2.resize(frame, (720, int(720*(9/16))))
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -71,14 +70,15 @@ def infer_image(loadedModel,confidence:float,frame,objectClass,requiredConfidenc
     # updating output according to returned result
     output.image(result['image'], caption="Detection in Video", use_column_width=True)
 
-
-def processFrame(image): 
+# --- / 
+# -- / 
+# TODO DEPRECATED ! 
+def processFrame(image:np.ndarray ) -> np.ndarray: 
     '''
     process Image such as it is required by videostreams  
     returns processed image
     '''
-    image = cv2.resize(frame, (720, int(720*(9/16))))
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
     return image
 
 
@@ -89,10 +89,7 @@ def processFrame(image):
 # TODO split running yolo and website creation 
 # --> something like adding entry to run_yolov8() in uiRunningApp.py 
 # which is then gathering all information etc
-# TODO add function signature 
-# TODO add description 
-# TODO refactor into smaller functions 
-# TODO 
+# TODO DEPRECATED 
 def run_yolov8():
     # global variables
     # TODO get rid of global variables!
@@ -177,8 +174,10 @@ def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,obje
     this videoStream can either be a **video** or **webcam input** 
     once it is done processing it will return a bool indicating that it stopped!  
     '''
-    # reading from given videoStream 
-    timeBeforeProcessing:float = time.time()
+    
+    timeBeforeProcessing:float = 0 
+    timeAfterProcessing:float = 0 
+    
     while videoStream.isOpened():
         
         result, frame = videoStream.read() 
@@ -186,90 +185,67 @@ def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,obje
         if not result: # not parsing if nothing was received 
             return None # --> indicates issue!
         # processing frame received 
-        processedFrame= processFrame(frame)
+        # processedFrame= processFrame(frame)
+        processedFrame = cv2.resize(frame, (720, int(720*(9/16))))
         # running detection on it 
         result = runYoloOnImage(loadedModel,objectClasses,processedFrame,requiredConfidence)
-        # infer_image(loadedModel,requiredConfidence,frame,streamlitOutput)
-        
-        # displaying resulted detection with StreamlitOutput!
-        streamlitOutput.image(result['image'], caption="Detection in Video", use_column_width=True)
         
         timeAfterProcessing:float = time.time()
         #calculate fps 
+        # currentFPS:float = round(1/ (timeAfterProcessing - timeBeforeProcessing),2)
         currentFPS:float = round(1/ (timeAfterProcessing - timeBeforeProcessing),2)
-        #display fps 
+        # overwritting old value
+        timeBeforeProcessing:float = timeAfterProcessing   
+        
+        # displaying resulted detection with StreamlitOutput!
+        streamlitOutput.image(result['image'], caption="Detection in Video", use_column_width=True)
+        # display fps 
         streamlitFPSCounter.markdown(("**{}**".format(currentFPS)))
     
     return True
 
-def wrapperVideo(loadedModel:object,objectClasses:list,requiredConfidence:float):
-    
-    
-
 # --- / 
 # -- / 
-# TODO refactor to another file --> does not belong here! 
-# TODO add function description 
-# TODO add signature 
-def image_input(data_src,confidence:float):
-    img_file = None
-    if data_src == 'Sample data':
-        # get all sample images
-        img_path = glob.glob('data/sample_img/*')
-        img_slider = st.slider("Select a test image.",
-                               min_value=1, max_value=len(img_path), step=1)
-        img_file = img_path[img_slider - 1]
-    else:
-        img_bytes = st.sidebar.file_uploader(
-            "Upload an image", type=['png', 'jpeg', 'jpg'])
-        if img_bytes:
-            img_file = PIL.Image.open(img_bytes)
-
-    # once image file was loaded or not 
-    if img_file:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(img_file, caption="Selected Image", use_column_width=True)
-        with col2:
-            res = model.predict(img_file, conf=confidence, classes=classes)
-            boxes = res[0].boxes
-            res_plotted = res[0].plot()[:, :, ::-1]
-            st.image(res_plotted, caption="Detected Image",
-                     use_column_width=True)
-            try:
-                with st.expander("Detection Results"):
-                    for box in boxes:
-                        st.write(box.data)
-            except Exception as ex:
-                st.write("No image is uploaded yet!")
-
-
-# --- / 
-# -- / 
+# TODO add description accordingly 
 def runYoloOnImage(loadedModel:object,objectClasses:list,imgObj,requiredConfidence:float=0.4,) -> dict:
+    ''' 
+    function running a selected model to detect a set of objects on a given image with a required confidence.
+    Parameters include: 
+    - loadedModel : yolo model 
+    - objectClasses : list of all classes to search for 
+    - imgObj : object of image to run on 
+    - requiredConfidence : float indicating confidence threshold 
+    
+    **returns**: 
+    - dictionary containg two keys:
+    -> "image" -> resulted image 
+    -> "foundObjects" -> all bounding boxes found
+    '''
+    
     # running model on given image 
     result:list= loadedModel.predict(imgObj,conf=requiredConfidence,classes=objectClasses)
     
     # gathering all found objects
+    # TODO could be an massive slow down when run with VideoFeed! 
+    # consider extracting this then? 
     resultedBoxes:list = result[0].boxes
     foundObjects:list = []
     for box in resultedBoxes:
         foundObjects.append(box.data)
     
     resultPlotted = result[0].plot()
+    resultColorCorrected = cv2.cvtColor(resultPlotted, cv2.COLOR_BGR2RGB)
     
-    # found objects is a dict with each class and its color
+    # found objects is a dict with each class
     returnBlob: dict = {
-        "image": resultPlotted,
+        "image": resultColorCorrected,
         "foundObjects": foundObjects,
     }
     return returnBlob
 
 # --- / 
 # -- / 
-# TODO refactor to another file --> does not belong here! 
-# TODO add function description 
-# TODO add signature 
+# TODO DEPRECATED ! 
 def video_input(data_src,confidence:float):
     vid_file = None
     tfile = None
@@ -327,7 +303,40 @@ def video_input(data_src,confidence:float):
 
         cap.release()
 
+# --- / 
+# -- / 
+# TODO DEPRECATED  !
+def image_input(data_src,confidence:float):
+    img_file = None
+    if data_src == 'Sample data':
+        # get all sample images
+        img_path = glob.glob('data/sample_img/*')
+        img_slider = st.slider("Select a test image.",
+                               min_value=1, max_value=len(img_path), step=1)
+        img_file = img_path[img_slider - 1]
+    else:
+        img_bytes = st.sidebar.file_uploader(
+            "Upload an image", type=['png', 'jpeg', 'jpg'])
+        if img_bytes:
+            img_file = PIL.Image.open(img_bytes)
 
+    # once image file was loaded or not 
+    if img_file:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(img_file, caption="Selected Image", use_column_width=True)
+        with col2:
+            res = model.predict(img_file, conf=confidence, classes=classes)
+            boxes = res[0].boxes
+            res_plotted = res[0].plot()[:, :, ::-1]
+            st.image(res_plotted, caption="Detected Image",
+                     use_column_width=True)
+            try:
+                with st.expander("Detection Results"):
+                    for box in boxes:
+                        st.write(box.data)
+            except Exception as ex:
+                st.write("No image is uploaded yet!")
 
 
 # --- /
@@ -337,12 +346,13 @@ def video_input(data_src,confidence:float):
 def trainModel(model):
     # Load the model.
     model = YOLO('yolov8n.pt')
-    if modules.moduleFileManagement.readFile('yolov8_config.yaml') == 'file not found':
+    # TODO remove Stringvalue
+    if readFile('yolov8_config.yaml') == 'file not found':
         createYaml()
 
     # Training.
     results = model.train(
-        data=modules.moduleFileManagement.gatherFilePath('**/yolov8_config.yaml'),
+        data=gatherFilePath('**/yolov8_config.yaml'),
         imgsz=1280,
         epochs=1,
         batch=8,
@@ -372,7 +382,4 @@ def offlineData():
 
 
 if __name__ == "__main__":
-    try:
-        run_yolov8()
-    except SystemExit:
-        pass
+    exit("not meant to be run")

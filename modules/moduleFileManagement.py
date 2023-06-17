@@ -30,6 +30,20 @@ def readFile(filepath:str) -> Optional[str]:
         readFile = None
     return readFile;
 
+
+def gatherFolderContent(queriedFolderPath:str) -> Optional[list]:
+    ''' 
+    function takes a **string** denoting a path and returns a list with all of its items 
+    
+    ### example usage: 
+    gatherFolderContent("sample_img") -> List [ "path/sampleImg.jpg",...,"path/sampleImg4.jpg"]
+    ''' 
+    folderPath:str =gatherFolderPath(queriedFolderPath)
+    globQuery:str = "{}{}*".format(folderPath,os.sep)
+    listOfFiles = glob.glob(globQuery)
+    
+    return listOfFiles
+    
 # --- / 
 # -- / 
 def gatherFilePath(queriedFilename:str) -> Optional[str]: 
