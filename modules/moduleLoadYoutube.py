@@ -1,27 +1,4 @@
 # --- / 
-# -- / external imports 
-import glob
-
-import time
-import cv2
-# import pafy
-import PIL
-import streamlit as st
-from PIL import Image
-
-
-
-
-
-
-# Load the YOLO model
-
-
-
-
-
-
-
 
 # Does not work yet
 """ def youtube():
@@ -60,11 +37,3 @@ from PIL import Image
         st2_text.markdown(f"**{width}**")
         st3_text.markdown(f"**{fps:.2f}**")
     vid_cap.release() """
-
-
-# Offline Data loading
-
-
-
-
-
