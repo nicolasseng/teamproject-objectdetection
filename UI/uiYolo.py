@@ -15,7 +15,7 @@ import tempfile
 # --- / 
 # -- / internal imports 
 from modules.moduleFileManagement import gatherFilePath, gatherFolderContent
-from modules.moduleYoloV8 import initializeModel, runYoloOnImage
+from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
 from UI.uiRunVideo import interfaceVideo
 
 # --- /
@@ -47,6 +47,8 @@ def runYoloInterface():
         # path was not found 
         defaultModelPath:str = "yolov8s.pt"
     print(defaultModelPath)
+    # TODO refactor
+    # only load model after selection of one --> takes longer to load otherwise!
     model = initializeModel(defaultModelPath)
 
     # -- /
@@ -63,23 +65,29 @@ def runYoloInterface():
     
     # -- / 
     # gathering yolo model 
-    model_options = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
-    yolo_model_selection:str = st.sidebar.selectbox("Select Yolov8 Model", model_options)
+    modelOptions = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
+    modelSelected:str = st.sidebar.selectbox("Select Yolov8 Model", modelOptions,index=0)
 
-    if yolo_model_selection == "Custom":
-        yolo_model:str = gatherFilePath('**/best.pt') 
-    else:
-        yolo_model:str = f"yolov8{yolo_model_selection.lower()[6:]}.pt"
+
+    if modelSelected != modelOptions[4]: 
+        modelSelected = "{}.pt".format(modelSelected.lower())
+        pathToModel:str = gatherFilePath( "**/"+modelSelected)
         
-    queriedPath = gatherFilePath( "**/"+yolo_model) # gathering path for selected yolo model 
-    if queriedPath == None:
-        # TODO construct path to download model to 
-        # TODO refactor this path to settings! 
-        initializeModel(yolo_model)
-        st.error(f'Go to Offline Data to train your own data set or unzip the "runs" folder')
-        return
-
-    model = initializeModel(queriedPath)
+        if pathToModel == None:  # was not found, downloading accordingly
+            st.error("File {} was not found on local storage, downloading: rerun afterwards".format(modelSelected))
+            initializeModel(modelSelected)
+            return 
+            
+        
+    else:
+        # custom trained set 
+        pathToModel:Optional[str] = gatherFilePath('**/best.pt') 
+        if pathToModel == None: 
+            st.error(f'Go to Offline Data to train your own data set or unzip the "runs" folder')
+            return  
+            
+    # case that path was found and set
+    model = initializeModel(pathToModel)
 
     st.sidebar.markdown("---")
 
@@ -118,11 +126,12 @@ def runYoloInterface():
         processWebcam(model,classes,confidence)
     
     elif sourceTypeSelected == SourceTypes[3]:
-        pass
+        st.error("youtube loading was not implemented yet")
+        return
     
     elif sourceTypeSelected == SourceTypes[4]:
-        pass
-        # offlineData()
+        # return 
+        offlineData(model)
 
 # --- / 
 # -- / 

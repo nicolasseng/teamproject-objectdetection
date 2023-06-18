@@ -127,12 +127,15 @@ def runYoloOnImage(loadedModel:object,objectClasses:list,imgObj,requiredConfiden
 # TODO add function signature
 def trainModel(model):
     # Load the model.
-    model = YOLO('yolov8n.pt')
+    # model = YOLO('yolov8n.pt')
     # TODO remove Stringvalue
-    if readFile('yolov8_config.yaml') == 'file not found':
+    configFile:Optional[str] = gatherFilePath("**/yolov8_config.yaml")
+    if configFile == None:
         createYaml()
+        return trainModel(model)
 
     # Training.
+    # TODO adapt output path to save results in "preTrainedYolo"
     results = model.train(
         data=gatherFilePath('**/yolov8_config.yaml'),
         imgsz=1280,
@@ -149,7 +152,7 @@ def trainModel(model):
 # TODO --> refactor to another file 
 # maybe smth like uiOfflineData? --> maybe its refactored too much at the end? 
 # I have to concentrate on that a little later tho 
-def offlineData():
+def offlineData(loadedModel):
     st.subheader("Offline Data Loading")
     st.write("This option will train the YOLO model using offline data.")
     st.write("Please make sure to provide the required data.yaml file.")
@@ -157,7 +160,8 @@ def offlineData():
 
     if st.button("Train Model"):
         try:
-            trainModel(model)
+            trainModel(loadedModel)
+            # TODO improve verbosity to show more information ( what was trained, progress ..)
             st.write("Training complete!")
         except RuntimeError:
             st.error('No data set provided or the "data" folder is not unzipped')
