@@ -10,17 +10,15 @@ from typing import Optional
 import cv2 
 import time
 from matplotlib.cm import np
+import os
 from ultralytics import YOLO
 # TODO to be removed once refactored! 
 import streamlit as st
 # TODO remove those libraries because they are not needed here --> at least should not be 
-import PIL 
-import glob 
-import tempfile
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import gatherFilePath, readFile
+from modules.moduleFileManagement import gatherFilePath, gatherFolderPath, createPath
 from modules.moduleYamlManagement import createYaml
 
 # --- / 
@@ -38,7 +36,15 @@ def initializeModel(selectedModel:str) -> object:
     '''
     
     selectedModelPath:str = gatherFilePath("**/{}".format(selectedModel))
-    print(selectedModelPath)
+
+    if selectedModelPath == None : 
+        # only occurs if our selected model was not downloaded yet 
+        # TODO add automatic download to designated space in data/preTrainedYolo
+        modelFolderPath:Optional[str] =gatherFolderPath("**/preTrainedYolo")
+        selectedModel = createPath(modelFolderPath,selectedModel)
+        print(selectedModel)
+        return YOLO(selectedModel)
+        
     # model:object = load_model(selectedModelPath)
     model:object = YOLO(selectedModelPath)
     return model

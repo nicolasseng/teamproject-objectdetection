@@ -104,13 +104,13 @@ def gatherFolderPath(queriedFolderName: str) -> Optional[str]:
         return None
 
 def createPath(rootPath:str, folder:str) -> str:
-    if platform.system() == "Windows":
-        # Running on Windows
-        convertedQueryPath = rootPath + "\\" + folder
-    else:
-        # Running on Unix (including macOS and Linux)
-        convertedQueryPath = rootPath + "/" + folder
-
+    '''
+    function takes **rootPath** denoting a FolderPath and further a second string denoting a file or folder 
+    combines both to a valid path by merging them with os.sep -> the correct seperator for paths according to
+    the used OS. 
+    
+    '''
+    convertedQueryPath:str = rootPath + os.sep + folder
     return convertedQueryPath
 
 
