@@ -6,7 +6,6 @@ Primarily based on a pre-trained model utilizing Mobilenet-SSD, a single stage n
 # --- / 
 # -- / external imports 
 from typing import Optional
-from altair import Undefined
 import numpy as np 
 import cv2 as opencv
 from streamlit.elements.color_picker import ColorPickerMixin

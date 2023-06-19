@@ -128,8 +128,9 @@ def displayMainWindow(imageUploaded,confidence_threshold:float):
                 imageUnprocessed,
             )
     
+    # TODO get model loading out from webinterface --> create wrapper function which chooses
+    # according to given model as string! --> helps implement Yolo and further models into this structure 
     loadedNet = MSSD.loadModel(MSSDnetwork,MSSDWeight)
-    
     # running model which will update the piped imageobject
     MSSD.wrapperRunningDnn(loadedNet,confidence_threshold,imageObj=imageProcessed,streamlitOutput=stProcessedImage)
 
