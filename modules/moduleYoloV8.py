@@ -137,8 +137,9 @@ def trainModel(model):
     # TODO remove Stringvalue
     configFile:Optional[str] = gatherFilePath("**/yolov8_config.yaml")
     if configFile == None:
-        createYaml()
-        return trainModel(model)
+        maybeException:Optional[Exception] = createYaml()
+        trainModel(model)
+        return 
 
     # Training.
     # TODO adapt output path to save results in "preTrainedYolo"
@@ -166,10 +167,11 @@ def offlineData(loadedModel):
 
     if st.button("Train Model"):
         try:
-            trainModel(loadedModel)
+            maybeException:Optional[Exception] = trainModel(loadedModel)
             # TODO improve verbosity to show more information ( what was trained, progress ..)
             st.write("Training complete!")
-        except RuntimeError:
+        except Exception as error:
+            st.error(error)
             st.error('No data set provided or the "data" folder is not unzipped')
 
 
