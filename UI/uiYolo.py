@@ -159,13 +159,17 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
         
         sampleFilesPaths:list = gatherFolderContent(queriedPath)
         if isImage:
+            sampleImageList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleImageList.append("Image " + str(i+1))
             selection = st.sidebar.radio(
-                "Select image.",
-                ('Image 1', 'Image 2', 'Image 3', 'Image 4'))
+                "Select image.", sampleImageList)
         else: 
+            sampleVideoList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleVideoList.append("Video " + str(i+1))
             selection = st.sidebar.radio(
-                "Select video.",
-                ('Video 1', 'Video 2'))
+                "Select video.", sampleVideoList)
         
         # taking selected image 
         
