@@ -23,7 +23,7 @@ def SelectProgramMode()  :
     function displaying a streamlit menu with several options
     upon selection of a module to execute, said module is executed 
     '''
-    appModeSelection = ["Readme File", "Run ObejctDetection", "Show the Code"];
+    appModeSelection = ["Readme File", "Run Object Detection", "Show the Code"];
     appModeSelectionIcons = ["book", "display", "display", "cloud-download"]
     app_mode = option_menu(
         None, 
