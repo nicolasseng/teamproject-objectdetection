@@ -107,7 +107,7 @@ def runYoloInterface():
     # TODO refactor to list selection
     # input src option
     sourceOptions:list =  ['Sample data', 'Upload your own data']
-    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[1] :
+    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[2] :
         
         sourceOptionSelected = st.sidebar.radio("Select input source: ",sourceOptions )
 
