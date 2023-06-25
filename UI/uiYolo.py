@@ -170,13 +170,23 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
             queriedPath = "sample_vid"
         
         sampleFilesPaths:list = gatherFolderContent(queriedPath)
-        img_slider = st.slider("Select source.",
-                                min_value=1, 
-                                max_value=len(sampleFilesPaths),
-                                step=1)
+        if isImage:
+            sampleImageList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleImageList.append("Image " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select image.", sampleImageList)
+        else: 
+            sampleVideoList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleVideoList.append("Video " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select video.", sampleVideoList)
+        
         # taking selected image 
         
-        selectedFile = sampleFilesPaths[img_slider - 1]  
+        selectedFile = sampleFilesPaths[int(selection[-1])-1]
+
         return selectedFile
         # once image file was loaded or not 
     
