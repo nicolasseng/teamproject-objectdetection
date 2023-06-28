@@ -112,7 +112,7 @@ def runYoloInterface():
     # initial values
     sourceOptionSelected: Optional[str] = None
     # TODO refactor to check against list values instead of strings
-    SourceTypes:list = ['image', 'video', 'webcam', "YouTube Video", "Offline Data"]
+    SourceTypes:list = ['image','webcam image', 'video', 'webcam video', "YouTube Video", "Offline Data"]
     sourceTypeSelected: Optional[str] = st.sidebar.radio(
         "Select input type: ",SourceTypes )
 
@@ -120,7 +120,8 @@ def runYoloInterface():
     # TODO refactor to list selection
     # input src option
     sourceOptions:list =  ['Sample data', 'Upload your own data']
-    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[1] :
+     
+    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[2] :
         sourceOptionSelected = st.sidebar.radio("Select input source: ",sourceOptions )
 
     
@@ -129,19 +130,25 @@ def runYoloInterface():
     if sourceTypeSelected == SourceTypes[0]:
         selectedImage = selectFileSource(True,sourceOptions,sourceOptionSelected)
         processImage(model,classes,selectedImage,confidence)
-    
+
     elif sourceTypeSelected == SourceTypes[1]:
+        picture = st.camera_input("Take a picture")
+        if picture:
+            selectedImage = Image.open(picture)
+            processImage(model,classes,selectedImage,confidence)
+    
+    elif sourceTypeSelected == SourceTypes[2]:
         selectedVideo = selectFileSource(False,sourceOptions,sourceOptionSelected)
         video_input(model,classes,selectedVideo,confidence)
     
-    elif sourceTypeSelected ==  SourceTypes[2]:
+    elif sourceTypeSelected ==  SourceTypes[3]:
         processWebcam(model,classes,confidence)
     
-    elif sourceTypeSelected == SourceTypes[3]:
+    elif sourceTypeSelected == SourceTypes[4]:
         st.error("youtube loading was not implemented yet")
         return
     
-    elif sourceTypeSelected == SourceTypes[4]:
+    elif sourceTypeSelected == SourceTypes[5]:
         # return 
         offlineData(model)
 
