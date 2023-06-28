@@ -17,7 +17,7 @@ import tempfile
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import convertArrayToImage, convertImageTo1DArray, gatherFilePath, gatherFolderContent, loadFromFile, prepareImageToSave, saveToFile, convertListToArray
+from modules.moduleFileManagement import convertArrayToImage, convertImageTo1DArray, gatherFilePath, gatherFolderContent, loadFromFile, prepareImageToSave, saveEvaluationToFile, saveToFile, convertListToArray
 from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
 from UI.uiRunVideo import interfaceVideo
 
@@ -239,26 +239,17 @@ def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:
                 "imageArray": imageListRepresentation,
                 "imageDimension": imageDimension
                 }
-            saveToFile(dictDetectionEval)
+            saveEvaluationToFile(dictDetectionEval,dictDetectionEval["usedModel"])
             
             # --- / 
             # -- / testing only!!
-            pathToTest = gatherFilePath("**/testEvaluation.json")
-            maybeDict:Optional[dict] = loadFromFile(pathToTest)
+            # pathToTest = gatherFilePath("**/testEvaluation.json")
+            # maybeDict:Optional[dict] = loadFromFile(pathToTest)
             
-            extractedArray = convertListToArray(maybeDict["imageArray"])
-            arrayDimension = maybeDict["imageDimension"]
-            imageArray = convertArrayToImage(extractedArray,arrayDimension)
-            st.image(imageArray,"extracted image!!")
-            
-            try:
-                with st.expander("Detection Results"):
-                    for box in detectionResult['foundObjects']:
-                        st.write(box)
-            
-            except Exception as ex:
-                st.write("No image was uploaded yet!")
-
+            # extractedArray = convertListToArray(maybeDict["imageArray"])
+            # arrayDimension = maybeDict["imageDimension"]
+            # imageArray = convertArrayToImage(extractedArray,arrayDimension)
+            # st.image(imageArray,"extracted image!!")
 # --- / 
 # -- / 
 # TODO refactor to another file --> does not belong here! 

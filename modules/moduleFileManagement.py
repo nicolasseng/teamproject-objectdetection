@@ -135,23 +135,56 @@ def convert2Dict(queriedString:str)-> Optional[dict]:
 # --- /
 # -- / 
 
-def saveToFile(dictToSave:dict):
+def saveEvaluationToFile(dictToSave:dict,filePrefix:str) -> Optional[str]:
+    ''' 
+    wrapping function for **saveToFile** specifically for saving detectionEvaluation
+    
+    ## example usage: 
+    saveEvaluationToFile(dictionary,"savedDict") -> saving file to detectionResults/savedDict[...].json 
+    '''
+    
+    folderPath:str = "detectionResults"
+    return saveToFile(dictToSave,filePrefix,folderPath)
+    
+
+def saveToFile(dictToSave:dict,filePrefix:str,folderPath:str) -> Optional[str]:
+    ''' 
+    function taking a dictionary and a prefix for the file. 
+    Saving the dictionary as json encoded String.
+    
+     
+    this function was specifically written for saving dictionary-blobs from objectdetection evaluations
+    returns a **String** representing the path to the file
+    ## example usage:
+    saveToFile(dictionary,"savedDict") -> will save the given file and return filePath
+    '''
+    
     convertedDict:Optional[str] = convert2Json(dictToSave)
     
     if convertedDict ==None:
         raise Exception("could not convert to json string")
     try:
-        resultFolder:str = gatherFolderPath("**/detectionResults")
-        fileName:str = "{}_{}.json".format(dictToSave["usedModel"],time.time())
+        resultFolder:str = gatherFolderPath("**/{}".format(folderPath))
+        fileName:str = "{}_{}.json".format(filePrefix,time.time())
         finalFilePath:str = createPath(resultFolder,fileName)
         with open(finalFilePath,"x") as file :
             file.write(convertedDict)
+        return finalFilePath
     except:
-        raise Exception("tscha")
+        return None
     
 # --- /
 # -- /   
 def loadFromFile(pathFile:str)-> Optional[dict]:
+    '''
+    function taking path to json file, parsing and returning the contained json object as dictionary 
+    returns **Dictionary** if the given path contains one
+    
+    ## example usage: 
+    gatheredPath = gatherFilePath("detectionResults/testEvaluation.json")
+    loadFromFile(gatheredPath) -> returns given dictionary in file
+    '''
+    
     try:
         with open(pathFile,"r") as file :
             content:str = file.read()
@@ -189,6 +222,10 @@ def convertArrayToImage(compressedArray:numpy.ndarray,arrayDimension:tuple) -> n
 # -- / 
  
 def convertListToArray(arraylist:list) -> numpy.ndarray:
+    ''' 
+    function takes a list and returns as **numpy.ndarray**
+    '''
+    
     return numpy.asarray(arraylist)
 # --- / 
 # -- / 
