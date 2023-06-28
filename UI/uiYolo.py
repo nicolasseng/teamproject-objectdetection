@@ -4,19 +4,22 @@ this file **temporarily** contains all the logic to provide a website build upon
 It will be removed once we have refactored and **united** our webinterface so that it can be run by all! 
 ''' 
 
+import tempfile
 # --- / 
 # -- / external imports 
 from typing import Optional
-from PIL import Image
-from numpy import select # ought to be removed at a later point 
+
 import streamlit as st
-import tempfile
+from numpy import select  # ought to be removed at a later point
+from PIL import Image
 
 # --- / 
 # -- / internal imports 
 from modules.moduleFileManagement import gatherFilePath, gatherFolderContent
-from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
+from modules.moduleYoloV8 import initializeModel, offlineData, runYoloOnImage
+from UI.uiRunningApp import run_the_app
 from UI.uiRunVideo import interfaceVideo
+
 
 # --- /
 # -- / 
@@ -33,6 +36,16 @@ def runYoloInterface():
 
     st.title("Object Recognition Dashboard")
     st.sidebar.title("Settings")
+
+    objectDetectionSelected: Optional[str] = None
+    ObjectDetection:list = ['Yolo', 'SSD']
+    sourceTypeSelected: Optional[str] = st.sidebar.radio(
+        "Select Object Detection: ", ObjectDetection)
+    
+    if sourceTypeSelected == 'SSD':
+        run_the_app()
+        return
+    
     # confidence slider
     confidence = st.sidebar.slider(
         'Confidence', min_value=0.1, max_value=1.0, value=.45)
@@ -107,8 +120,8 @@ def runYoloInterface():
     # TODO refactor to list selection
     # input src option
     sourceOptions:list =  ['Sample data', 'Upload your own data']
+     
     if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[2] :
-        
         sourceOptionSelected = st.sidebar.radio("Select input source: ",sourceOptions )
 
     
@@ -164,13 +177,23 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
             queriedPath = "sample_vid"
         
         sampleFilesPaths:list = gatherFolderContent(queriedPath)
-        img_slider = st.slider("Select source.",
-                                min_value=1, 
-                                max_value=len(sampleFilesPaths),
-                                step=1)
+        if isImage:
+            sampleImageList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleImageList.append("Image " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select image.", sampleImageList)
+        else: 
+            sampleVideoList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleVideoList.append("Video " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select video.", sampleVideoList)
+        
         # taking selected image 
         
-        selectedFile = sampleFilesPaths[img_slider - 1]  
+        selectedFile = sampleFilesPaths[int(selection[-1])-1]
+
         return selectedFile
         # once image file was loaded or not 
     
