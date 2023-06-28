@@ -4,22 +4,25 @@ this file **temporarily** contains all the logic to provide a website build upon
 It will be removed once we have refactored and **united** our webinterface so that it can be run by all! 
 ''' 
 
+import tempfile
 # --- / 
 # -- / external imports 
 from base64 import decode
 from typing import Optional
 from PIL import Image
-from altair.utils.core import np
 # TODO remove from this file  --> no logic!
 import numpy
 import streamlit as st
-import tempfile
+from numpy import select  # ought to be removed at a later point
+from PIL import Image
 
 # --- / 
 # -- / internal imports 
 from modules.moduleFileManagement import convertArrayToImage, convertImageTo1DArray, gatherFilePath, gatherFolderContent, loadFromFile, prepareImageToSave, saveEvaluationToFile, saveToFile, convertListToArray
 from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
+from UI.uiRunningApp import run_the_app
 from UI.uiRunVideo import interfaceVideo
+
 
 # --- /
 # -- / 
@@ -36,6 +39,16 @@ def runYoloInterface():
 
     st.title("Object Recognition Dashboard")
     st.sidebar.title("Settings")
+
+    objectDetectionSelected: Optional[str] = None
+    ObjectDetection:list = ['Yolo', 'SSD']
+    sourceTypeSelected: Optional[str] = st.sidebar.radio(
+        "Select Object Detection: ", ObjectDetection)
+    
+    if sourceTypeSelected == 'SSD':
+        run_the_app()
+        return
+    
     # confidence slider
     confidence = st.sidebar.slider(
         'Confidence', min_value=0.1, max_value=1.0, value=.45)
@@ -102,7 +115,7 @@ def runYoloInterface():
     # initial values
     sourceOptionSelected: Optional[str] = None
     # TODO refactor to check against list values instead of strings
-    SourceTypes:list = ['image', 'video', 'webcam', "YouTube Video", "Offline Data"]
+    SourceTypes:list = ['image','webcam image', 'video', 'webcam video', "YouTube Video", "Offline Data"]
     sourceTypeSelected: Optional[str] = st.sidebar.radio(
         "Select input type: ",SourceTypes )
 
@@ -110,8 +123,8 @@ def runYoloInterface():
     # TODO refactor to list selection
     # input src option
     sourceOptions:list =  ['Sample data', 'Upload your own data']
-    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[1] :
-        
+     
+    if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[2] :
         sourceOptionSelected = st.sidebar.radio("Select input source: ",sourceOptions )
 
     
@@ -120,19 +133,25 @@ def runYoloInterface():
     if sourceTypeSelected == SourceTypes[0]:
         selectedImage = selectFileSource(True,sourceOptions,sourceOptionSelected)
         processImage(model,classes,selectedImage,confidence,modelSelected)
-    
+        
     elif sourceTypeSelected == SourceTypes[1]:
+        picture = st.camera_input("Take a picture")
+        if picture:
+            selectedImage = Image.open(picture)
+            processImage(model,classes,selectedImage,confidence)
+    
+    elif sourceTypeSelected == SourceTypes[2]:
         selectedVideo = selectFileSource(False,sourceOptions,sourceOptionSelected)
         video_input(model,classes,selectedVideo,confidence)
     
-    elif sourceTypeSelected ==  SourceTypes[2]:
+    elif sourceTypeSelected ==  SourceTypes[3]:
         processWebcam(model,classes,confidence)
     
-    elif sourceTypeSelected == SourceTypes[3]:
+    elif sourceTypeSelected == SourceTypes[4]:
         st.error("youtube loading was not implemented yet")
         return
     
-    elif sourceTypeSelected == SourceTypes[4]:
+    elif sourceTypeSelected == SourceTypes[5]:
         # return 
         offlineData(model)
 
@@ -161,13 +180,23 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
             queriedPath = "sample_vid"
         
         sampleFilesPaths:list = gatherFolderContent(queriedPath)
-        img_slider = st.slider("Select source.",
-                                min_value=1, 
-                                max_value=len(sampleFilesPaths),
-                                step=1)
+        if isImage:
+            sampleImageList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleImageList.append("Image " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select image.", sampleImageList)
+        else: 
+            sampleVideoList:list = list()
+            for i in range(len(sampleFilesPaths)):
+                sampleVideoList.append("Video " + str(i+1))
+            selection = st.sidebar.radio(
+                "Select video.", sampleVideoList)
+        
         # taking selected image 
         
-        selectedFile = sampleFilesPaths[img_slider - 1]  
+        selectedFile = sampleFilesPaths[int(selection[-1])-1]
+
         return selectedFile
         # once image file was loaded or not 
     

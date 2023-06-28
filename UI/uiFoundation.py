@@ -17,7 +17,6 @@ from UI.uiRunningApp import run_the_app
 from UI.uiYolo import runYoloInterface
 
 
-
 # --- / 
 # -- / function to select mode to display at runtime
 def SelectProgramMode()  : 
@@ -26,6 +25,7 @@ def SelectProgramMode()  :
     upon selection of a module to execute, said module is executed 
     '''
     appModeSelection = ["Readme File", "Run SSD", "Yolov8", "Show the Code","Display Evaluations"];
+
     appModeSelectionIcons = ["book", "display", "display", "cloud-download"]
     app_mode = option_menu(
         None, 
@@ -36,11 +36,8 @@ def SelectProgramMode()  :
     # selecting appropiate mode: 
     if app_mode == appModeSelection[0]:
         # display readme 
-        DisplayReadme();
-    elif app_mode == appModeSelection[1]: 
-        # runObjectDetection using SSD
-        run_the_app()
-    elif app_mode == appModeSelection[2]:
+        DisplayReadme()
+    elif app_mode == appModeSelection[1]:
         # runObjectDetection using yolov8
         runYoloInterface()
     elif app_mode == appModeSelection[3]:
