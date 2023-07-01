@@ -6,7 +6,7 @@ necesssary and is later piped or accessed by the UI.
 
 # --- /
 # -- / external imports 
-from typing import Optional
+from typing import Callable, Optional
 import cv2 
 import time
 from matplotlib.cm import np
@@ -14,15 +14,13 @@ import os
 from ultralytics import YOLO
 # TODO to be removed once refactored! 
 import streamlit as st
+from modules.moduleDetectionMobileNetSSD import wrapperRunningDnn
 # TODO remove those libraries because they are not needed here --> at least should not be 
 
 # --- / 
 # -- / internal imports 
 from modules.moduleFileManagement import gatherFilePath, gatherFolderPath, createPath
 from modules.moduleYamlManagement import createYaml
-
-# --- / 
-# -- / 
 
 # --- / 
 # -- / 
@@ -52,7 +50,7 @@ def initializeModel(selectedModel:str) -> object:
 
 # --- / 
 # -- / 
-def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence) -> Optional[bool]:
+def modelOnVideo(functionToRun:Callable ,loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence) -> Optional[bool]:
     '''
     this function takes a videostream and processes its frames by running them on a loaded yoloV8 model 
     this videoStream can either be a **video** or **webcam input** 
@@ -68,16 +66,17 @@ def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,obje
         
         if not result: # not parsing if nothing was received 
             return None # --> indicates issue!
-        # processing frame received 
-        # processedFrame= processFrame(frame)
         processedFrame = cv2.resize(frame, (720, int(720*(9/16))))
         # running detection on it 
-        result = runYoloOnImage(loadedModel,objectClasses,processedFrame,requiredConfidence)
+        result = functionToRun(loadedModel,requiredConfidence, objectClasses,processedFrame) 
+        #yoloOnImage(loadedModel,requiredConfidence, objectClasses,processedFrame)
+        #mssdOnImage(loadedModel,requiredConfidence, objectClasses,processedFrame)
         
         timeAfterProcessing:float = time.time()
+        
         #calculate fps 
-        # currentFPS:float = round(1/ (timeAfterProcessing - timeBeforeProcessing),2)
         currentFPS:float = round(1/ (timeAfterProcessing - timeBeforeProcessing),2)
+        
         # overwritting old value
         timeBeforeProcessing:float = timeAfterProcessing   
         
@@ -89,9 +88,27 @@ def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,obje
     return True
 
 # --- / 
+# -- /
+def yoloOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence) -> Optional[bool]:
+    ''' 
+    wrapper function for **YoloV8** detection, executing modelOnVideo with 
+    predefined function for Yolo object detection
+    '''
+    modelOnVideo(runYoloOnImage,loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence)
+
+# --- / 
+# -- /
+def mssdOnVideo(loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence) -> Optional[bool]:
+    ''' 
+    wrapper function for **MSSD** detection, executing modelOnVideo with 
+    predefined function for mssd object detection
+    '''
+    modelOnVideo(wrapperRunningDnn,loadedModel,videoStream,streamlitOutput,streamlitFPSCounter,objectClasses,requiredConfidence)
+
+# --- / 
 # -- / 
 # TODO add description accordingly 
-def runYoloOnImage(loadedModel:object,objectClasses:list,imgObj,requiredConfidence:float=0.4,) -> dict:
+def runYoloOnImage(loadedModel:object,requiredConfidence:float,objectClasses:list,imgObj,) -> dict:
     ''' 
     function running a selected model to detect a set of objects on a given image with a required confidence.
     Parameters include: 

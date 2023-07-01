@@ -6,18 +6,18 @@ It will be removed once we have refactored and **united** our webinterface so th
 
 # --- / 
 # -- / external imports 
-from typing import Optional
+from typing import Callable, Optional
 from PIL import Image
 import streamlit as st
 import tempfile
-
-from sympy import Union
-from UI.uiRunningApp import displayMainWindow, displayMainWindowVideo
+import numpy
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import convertArrayToImage, convertImageTo1DArray, gatherFilePath, gatherFolderContent, loadFromFile, prepareImageToSave, saveEvaluationToFile, saveToFile, convertListToArray
-from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
+from modules.moduleFileManagement import gatherFilePath, gatherFolderContent, prepareImageToSave, saveEvaluationToFile
+from modules.moduleYoloV8 import initializeModel, mssdOnVideo, runYoloOnImage, offlineData, yoloOnVideo
+from settings.modelSettings import MSSDnetwork, MSSDWeight
+import modules.moduleDetectionMobileNetSSD as MSSD
 from UI.uiRunVideo import interfaceVideo
 
 # --- /
@@ -54,7 +54,6 @@ def runModelInterface():
     # gathering yolo model 
     if modelSelected == modelOptions[1]: 
         runOnYolo(SourceTypes,sourceTypeSelected,sourcePath)
-        # selectionYoloModel()
     
     # gathering MSSD model
     if modelSelected == modelOptions[2]:
@@ -62,23 +61,34 @@ def runModelInterface():
 
 # --- / 
 # -- / 
-def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> None:
+def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath= None) -> None:
     ''' 
     function being run, whenever mobilenetssd was selected as active model 
     this functino collects required data and then runs the model on the selected source
     '''
+    
+    model = MSSD.loadModel(MSSDnetwork,MSSDWeight)
+    objectClasses:list = [ 'background',
+        'aeroplane','bicycle','bird','boat',
+        'bottle','bus','car','cat','chair',
+        'cow','diningtable','dog','horse',
+        'motorbike','person','pottedplant',
+        'sheep','sofa','train','tvmonitor' ]
+    
     confidence:float = gatherConfidence()
+    
     if selectedType == SourceTypes[0]:
         # image input
-        displayMainWindow(sourcePath,confidence)
+        interfaceImage(model,MSSD.wrapperRunningDnn,objectClasses,sourcePath,confidence,"MSSD")
+    
     elif selectedType == SourceTypes[1]:
         # video input
-        st.error("not done, sorry")
+        interfaceVideo(model,mssdOnVideo ,sourcePath,objectClasses,confidence)
         # displayMainWindowVideo()
     
     elif selectedType ==  SourceTypes[2]:
         # webcam
-        displayMainWindowVideo(confidence)
+        interfaceVideo(model,mssdOnVideo,None,objectClasses,confidence)
         
     elif selectedType == SourceTypes[3]:
         st.error("youtube loading was not implemented yet")
@@ -87,11 +97,12 @@ def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath:str|None = None)
     elif selectedType == SourceTypes[4]:
         st.error("Offline training has not been implemented for MobileNetSSD yet.")
         return None
-    
+
+
  
 # --- / 
 # -- / 
-def runOnYolo(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> None:
+def runOnYolo(SourceTypes:list,selectedType:str,sourcePath= None) -> None:
     '''
     function being run, whenever yolo was selected as active model
     this function collects the necessary data with user-inputs and then runs the selected source through the ObjectDetection 
@@ -106,14 +117,14 @@ def runOnYolo(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> N
     
     if selectedType == SourceTypes[0]:
         
-        processImage(model,gatheredClasses,sourcePath,confidence,modelName)
+        interfaceImage(model,runYoloOnImage, gatheredClasses,sourcePath,confidence,modelName)
     
     elif selectedType == SourceTypes[1]:
-        video_input(model,gatheredClasses,sourcePath,confidence)
-    
+        interfaceVideo(model,yoloOnVideo,sourcePath,gatheredClasses,confidence)
+        
     elif selectedType ==  SourceTypes[2]:
-        processWebcam(model,gatheredClasses,confidence)
-    
+        interfaceVideo(model,yoloOnVideo,None,gatheredClasses,confidence)
+        
     elif selectedType == SourceTypes[3]:
         st.error("youtube loading was not implemented yet")
         return
@@ -121,12 +132,9 @@ def runOnYolo(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> N
     elif selectedType == SourceTypes[4]:
         # return 
         offlineData(model)
-    
-# --- / 
-# -- / 
-def runYoloOnObject(loadedModel:object,selectedClasses:list,source,confidence,modelName ):
-    pass
 
+# --- /
+# -- / 
 def gatherClassesYolo(loadedModel:object) ->list :
     # -- /
     # gathering classes
@@ -173,7 +181,8 @@ def selectionYoloModel() -> tuple[str,object] | None :
     model = initializeModel(pathToModel)
     return (yoloSelected,model)
 
-
+# --- /
+# -- /
 def selectSource(SourceTypes:list) -> tuple[str,str|None]: 
     '''
     function displaying selection for sourcetype and source 
@@ -197,10 +206,10 @@ def selectSource(SourceTypes:list) -> tuple[str,str|None]:
         sourceOptionSelected:str | None = st.sidebar.radio("Select input source: ",sourceOptions,index=0 )
     
     if sourceTypeSelected == SourceTypes[0]:
-        selectedSource = str(selectFileSource(True,sourceOptions,sourceOptionSelected))
+        selectedSource = selectFileSource(True,sourceOptions,sourceOptionSelected)
     
     if sourceTypeSelected == SourceTypes[1]: 
-        selectedSource = str(selectFileSource(False,sourceOptions,sourceOptionSelected))
+        selectedSource = selectFileSource(False,sourceOptions,sourceOptionSelected)
 
     
     return (sourceTypeSelected,selectedSource)
@@ -215,7 +224,6 @@ def gatherConfidence() -> float:
     confidence = st.sidebar.slider(
     'Confidence', min_value=0.1, max_value=1.0, value=.45)
     return confidence
-
 
 # --- / 
 # -- / 
@@ -284,74 +292,55 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
             # creating image Object
             selectedFile = Image.open(selectedFile)
     
-
-    
     return selectedFile
     
 # --- /
 # -- /
-def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:float,usedModel:str):
-     
-    # once image file was loaded or not 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(selectedImage, caption="Selected Image", use_column_width=True)
-        with col2:
-            
-            detectionResult = runYoloOnImage(loadedModel,objectClasses,selectedImage,confidence)
-            st.image(detectionResult['image'], caption="Detected Image",
-                     use_column_width=True)
-            
-            # --- 
-            # - logic for evaluating results
-            dictOfEvaluation:Optional[dict] = formEvaluateResult()
-            if dictOfEvaluation == None: 
-                return 
-            
-            # collecting all results: 
-            
-            # convertedImage:numpy.ndarray = convertImageTo1DArray(detectionResult["image"])
-            # imageStringRepresentation:str = convertedImage.tolist()
-            imageListRepresentation:list = prepareImageToSave(detectionResult["image"])
-            imageDimension:tuple = detectionResult["image"].shape
-            
-            dictDetectionEval:dict= {
-                "usedModel": usedModel,
-                "confidence": confidence,
-                "amountDetected": len(detectionResult["foundObjects"]),
-                "actualAmount": dictOfEvaluation["amount"],
-                "faultyDetection": dictOfEvaluation["faulty"],
-                "imageArray": imageListRepresentation,
-                "imageDimension": imageDimension
-                }
-            saveEvaluationToFile(dictDetectionEval,dictDetectionEval["usedModel"])
-            
-            # --- / 
-            # -- / testing only!!
-            # pathToTest = gatherFilePath("**/testEvaluation.json")
-            # maybeDict:Optional[dict] = loadFromFile(pathToTest)
-            
-            # extractedArray = convertListToArray(maybeDict["imageArray"])
-            # arrayDimension = maybeDict["imageDimension"]
-            # imageArray = convertArrayToImage(extractedArray,arrayDimension)
-            # st.image(imageArray,"extracted image!!")
-
-# --- / 
-# -- / 
-# TODO refactor to another file --> does not belong here! 
-# TODO add function description 
-# TODO add signature 
-def video_input(loadedModel:object,objectClasses:list,selectedVideo,confidence:float):
-        interfaceVideo(loadedModel,selectedVideo,objectClasses,confidence)
-
-# --- / 
-# -- / 
-def processWebcam(loadedModel:object,objectClasses:list,requiredConfidence:float):
+def interfaceImage(loadedModel:object,functionRunModel:Callable ,objectClasses:list,selectedImage:str| numpy.ndarray,confidence:float,usedModel:str):
     ''' 
-    function runs Detectionmodel on Webcam. 
-    Opens the webcam and then pipes its datastream into the "interfaceVideo"
+    function that displays both the unprocessed and processed image after being run on a given model 
+    takes the following arguments: 
+    - loaded Model necessary for the function to run on 
+    - functionRunModel with the following signature ( loadedModel:object, confidence:float, objectClasses:list, selectedImage:array|str) 
+    - objectClasses :list 
+    - selectedImage: numpy. array | str
+    - confidence : float
+    - usedModel : string representation of used model
+    
     '''
-    interfaceVideo(loadedModel,None,objectClasses,requiredConfidence)
+    # once image file was loaded or not 
+    col1, col2 = st.columns(2)
+    with col1:
+        st.image(selectedImage, caption="Selected Image", use_column_width=True)
+    with col2:
+        
+        # varies based on given function
+        detectionResult = functionRunModel(loadedModel,confidence,objectClasses,selectedImage)
+        # runYoloOnImage(loadedModel,confidence, objectClasses,selectedImage)
+        # wrapperRunningDnn(loadedNet,confidence_threshold,objectClasses,selectedImage)
+
+        st.image(detectionResult['image'], caption="Detected Image",
+                    use_column_width=True)
+        
+        # - logic for evaluating results
+        dictOfEvaluation:Optional[dict] = formEvaluateResult()
+        if dictOfEvaluation == None: 
+            return 
+        
+        # collecting all results: 
+        imageListRepresentation:list = prepareImageToSave(detectionResult["image"])
+        imageDimension:tuple = detectionResult["image"].shape
+        
+        dictDetectionEval:dict= {
+            "usedModel": usedModel,
+            "confidence": confidence,
+            "amountDetected": len(detectionResult["foundObjects"]),
+            "actualAmount": dictOfEvaluation["amount"],
+            "faultyDetection": dictOfEvaluation["faulty"],
+            "imageArray": imageListRepresentation,
+            "imageDimension": imageDimension
+            }
+        saveEvaluationToFile(dictDetectionEval,dictDetectionEval["usedModel"])
     
 
 # dictionary returned should contain: 
