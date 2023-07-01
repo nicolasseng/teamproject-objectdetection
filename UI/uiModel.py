@@ -6,14 +6,13 @@ It will be removed once we have refactored and **united** our webinterface so th
 
 # --- / 
 # -- / external imports 
-from base64 import decode
 from typing import Optional
 from PIL import Image
-from altair.utils.core import np
-# TODO remove from this file  --> no logic!
-import numpy
 import streamlit as st
 import tempfile
+
+from sympy import Union
+from UI.uiRunningApp import displayMainWindow, displayMainWindowVideo
 
 # --- / 
 # -- / internal imports 
@@ -28,60 +27,141 @@ from UI.uiRunVideo import interfaceVideo
 # TODO add function signature 
 # TODO add description 
 # TODO refactor into smaller functions 
-def runYoloInterface():
-    # global variables
-    # TODO get rid of global variables!
-    confidence = 0.25
-    # global model, classes
-
+def runModelInterface():
     st.title("Object Recognition Dashboard")
     st.sidebar.title("Settings")
+    
     # confidence slider
-    confidence = st.sidebar.slider(
-        'Confidence', min_value=0.1, max_value=1.0, value=.45)
-    
-    
-    # TODO refactor
-    # -- / 
-    # loads model 
-    try:
-        defaultModelPath:str = gatherFilePath("**/yolov8s.pt")
-    except:
-        # path was not found 
-        defaultModelPath:str = "yolov8s.pt"
-    print(defaultModelPath)
-    # TODO refactor
-    # only load model after selection of one --> takes longer to load otherwise!
-    model = initializeModel(defaultModelPath)
 
+    st.sidebar.markdown("---")
+     
+    # input options
+    SourceTypes:list = ['image', 'video', 'webcam', "YouTube Video", "Offline Data"]
+    sourceTypeSelected,sourcePath  = selectSource(SourceTypes)
+    st.sidebar.markdown("---")
+    
+    # gathering model to use 
+    modelOptions:list = ["- Select model -","YoloV8","MobileNetSSD"]
+    modelSelected: Optional[str] = st.sidebar.selectbox("Select Model to run", modelOptions)
+    
+    st.sidebar.markdown("---") 
+     
+    # default, waiting for input
+    if modelSelected == modelOptions[0]: 
+        st.markdown("# select model to start")
+        return
+    
+    # gathering yolo model 
+    if modelSelected == modelOptions[1]: 
+        runOnYolo(SourceTypes,sourceTypeSelected,sourcePath)
+        # selectionYoloModel()
+    
+    # gathering MSSD model
+    if modelSelected == modelOptions[2]:
+        runOnMobileNet(SourceTypes,sourceTypeSelected,sourcePath)
+
+# --- / 
+# -- / 
+def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> None:
+    ''' 
+    function being run, whenever mobilenetssd was selected as active model 
+    this functino collects required data and then runs the model on the selected source
+    '''
+    confidence:float = gatherConfidence()
+    if selectedType == SourceTypes[0]:
+        # image input
+        displayMainWindow(sourcePath,confidence)
+    elif selectedType == SourceTypes[1]:
+        # video input
+        st.error("not done, sorry")
+        # displayMainWindowVideo()
+    
+    elif selectedType ==  SourceTypes[2]:
+        # webcam
+        displayMainWindowVideo(confidence)
+        
+    elif selectedType == SourceTypes[3]:
+        st.error("youtube loading was not implemented yet")
+        return
+    
+    elif selectedType == SourceTypes[4]:
+        st.error("Offline training has not been implemented for MobileNetSSD yet.")
+        return None
+    
+ 
+# --- / 
+# -- / 
+def runOnYolo(SourceTypes:list,selectedType:str,sourcePath:str|None = None) -> None:
+    '''
+    function being run, whenever yolo was selected as active model
+    this function collects the necessary data with user-inputs and then runs the selected source through the ObjectDetection 
+    '''
+    confidence:float = gatherConfidence()
+    selectedModel = selectionYoloModel()
+    if selectedModel == None: 
+        return
+    model:object =  selectedModel[1]
+    modelName:str = selectedModel[0]
+    gatheredClasses:list = gatherClassesYolo(model)
+    
+    if selectedType == SourceTypes[0]:
+        
+        processImage(model,gatheredClasses,sourcePath,confidence,modelName)
+    
+    elif selectedType == SourceTypes[1]:
+        video_input(model,gatheredClasses,sourcePath,confidence)
+    
+    elif selectedType ==  SourceTypes[2]:
+        processWebcam(model,gatheredClasses,confidence)
+    
+    elif selectedType == SourceTypes[3]:
+        st.error("youtube loading was not implemented yet")
+        return
+    
+    elif selectedType == SourceTypes[4]:
+        # return 
+        offlineData(model)
+    
+# --- / 
+# -- / 
+def runYoloOnObject(loadedModel:object,selectedClasses:list,source,confidence,modelName ):
+    pass
+
+def gatherClassesYolo(loadedModel:object) ->list :
     # -- /
     # gathering classes
     if st.sidebar.checkbox("Custom Classes"):
-        model_names = list(model.names.values())
+        model_names = list(loadedModel.names.values())
         assigned_class = st.sidebar.multiselect(
             "Select Classes", model_names, default=[model_names[0]])
         classes:list = [model_names.index(name) for name in assigned_class]
     else:
-        classes:list = list(model.names.keys())
-
-    st.sidebar.markdown("---")
+        classes:list = list(loadedModel.names.keys())
     
-    # -- / 
-    # gathering yolo model 
-    modelOptions = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
-    modelSelected:str = st.sidebar.selectbox("Select Yolov8 Model", modelOptions,index=0)
+    return classes 
+
+# --- / 
+# -- / 
+def selectionYoloModel() -> tuple[str,object] | None : 
+    ''' 
+    function displaying selection for choosing a YoloV8 model to run on 
+    retursn the selected model initialized as Object 
+    '''
+    
+    yoloOptions = ["YOLOv8n", "YOLOv8s", "YOLOv8m", "YOLOv8l", "Custom"]
+    # defaults to Yolov8n
+    yoloSelected: str = st.sidebar.selectbox("Select Yolov8 Model", yoloOptions,index=0)
 
 
-    if modelSelected != modelOptions[4]: 
-        modelSelected = "{}.pt".format(modelSelected.lower())
-        pathToModel:str = gatherFilePath( "**/"+modelSelected)
+    if yoloSelected != yoloOptions[4]: 
+        yoloSelected = "{}.pt".format(yoloSelected.lower())
+        pathToModel:str = gatherFilePath( "**/"+yoloSelected)
         
         if pathToModel == None:  # was not found, downloading accordingly
-            st.error("File {} was not found on local storage, downloading: rerun afterwards".format(modelSelected))
-            initializeModel(modelSelected)
+            st.error("File {} was not found on local storage, downloading: rerun afterwards".format(yoloSelected))
+            initializeModel(yoloSelected)
             return 
             
-        
     else:
         # custom trained set 
         pathToModel:Optional[str] = gatherFilePath('**/best.pt') 
@@ -91,54 +171,55 @@ def runYoloInterface():
             
     # case that path was found and set
     model = initializeModel(pathToModel)
+    return (yoloSelected,model)
 
-    st.sidebar.markdown("---")
 
-    ## --- ----
-    ## ---- EXECUTING WITH SELECTED SOURCE 
-    ## --- ----
+def selectSource(SourceTypes:list) -> tuple[str,str|None]: 
+    '''
+    function displaying selection for sourcetype and source 
+    returning the selection as tuple 
     
-    # input options
-    # initial values
-    sourceOptionSelected: Optional[str] = None
-    # TODO refactor to check against list values instead of strings
-    SourceTypes:list = ['image', 'video', 'webcam', "YouTube Video", "Offline Data"]
+    whenever the selected Source is **neither** an **image** or **video** the second value **will be none** 
+    
+    ### example usage: 
+    selectSource() -> ("image", "SampleData")
+    '''
+    # setting default, in case we are not selecting video / image input
+    selectedSource:str|None =None
+    
     sourceTypeSelected: Optional[str] = st.sidebar.radio(
-        "Select input type: ",SourceTypes )
-
-    # TODO refactor to separate function! 
-    # TODO refactor to list selection
-    # input src option
+        "Select input type: ",SourceTypes,index=0 )
+    
     sourceOptions:list =  ['Sample data', 'Upload your own data']
+    
     if sourceTypeSelected == SourceTypes[0] or  sourceTypeSelected == SourceTypes[1] :
         
-        sourceOptionSelected = st.sidebar.radio("Select input source: ",sourceOptions )
+        sourceOptionSelected:str | None = st.sidebar.radio("Select input source: ",sourceOptions,index=0 )
+    
+    if sourceTypeSelected == SourceTypes[0]:
+        selectedSource = str(selectFileSource(True,sourceOptions,sourceOptionSelected))
+    
+    if sourceTypeSelected == SourceTypes[1]: 
+        selectedSource = str(selectFileSource(False,sourceOptions,sourceOptionSelected))
 
     
-    # gathering image
-    # TODO refactor to separate function!
-    if sourceTypeSelected == SourceTypes[0]:
-        selectedImage = selectFileSource(True,sourceOptions,sourceOptionSelected)
-        processImage(model,classes,selectedImage,confidence,modelSelected)
+    return (sourceTypeSelected,selectedSource)
     
-    elif sourceTypeSelected == SourceTypes[1]:
-        selectedVideo = selectFileSource(False,sourceOptions,sourceOptionSelected)
-        video_input(model,classes,selectedVideo,confidence)
-    
-    elif sourceTypeSelected ==  SourceTypes[2]:
-        processWebcam(model,classes,confidence)
-    
-    elif sourceTypeSelected == SourceTypes[3]:
-        st.error("youtube loading was not implemented yet")
-        return
-    
-    elif sourceTypeSelected == SourceTypes[4]:
-        # return 
-        offlineData(model)
+# --- / 
+# -- / 
+def gatherConfidence() -> float: 
+    ''' 
+    function displaying a slider to select confidence between 0.1 to 1 
+    returns selected value as float
+    '''
+    confidence = st.sidebar.slider(
+    'Confidence', min_value=0.1, max_value=1.0, value=.45)
+    return confidence
+
 
 # --- / 
 # -- / 
-def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str]):
+def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str])-> str | object | None:
     '''
     function that queries file to use for detection. 
     It returns either a sample File (image or video) or an uploaded file (by the user )
@@ -160,7 +241,11 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
         if not isImage:
             queriedPath = "sample_vid"
         
-        sampleFilesPaths:list = gatherFolderContent(queriedPath)
+        sampleFilesPaths:Optional[list] = gatherFolderContent(queriedPath)
+        if sampleFilesPaths ==None:
+            st.error("no sample files were found") 
+            return None
+        
         img_slider = st.slider("Select source.",
                                 min_value=1, 
                                 max_value=len(sampleFilesPaths),
@@ -203,8 +288,8 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
     
     return selectedFile
     
-    
-    
+# --- /
+# -- /
 def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:float,usedModel:str):
      
     # once image file was loaded or not 
@@ -250,6 +335,7 @@ def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:
             # arrayDimension = maybeDict["imageDimension"]
             # imageArray = convertArrayToImage(extractedArray,arrayDimension)
             # st.image(imageArray,"extracted image!!")
+
 # --- / 
 # -- / 
 # TODO refactor to another file --> does not belong here! 
@@ -257,43 +343,6 @@ def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:
 # TODO add signature 
 def video_input(loadedModel:object,objectClasses:list,selectedVideo,confidence:float):
         interfaceVideo(loadedModel,selectedVideo,objectClasses,confidence)
-        # cap = cv2.VideoCapture(videoFile)
-        # width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        # height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
-        # # fps calculation 
-        # fps = 0
-        # prev_time = 0
-        # curr_time = 0
-        # st1, st2, st3 = st.columns(3)
-        # with st1:
-        #     st.markdown("## Height")
-        #     st1_text = st.markdown(f"{height}")
-        # with st2:
-        #     st.markdown("## Width")
-        #     st2_text = st.markdown(f"{width}")
-        # with st3:
-        #     st.markdown("## FPS")
-        #     st3_text = st.markdown(f"{fps}")
-        # st.markdown("---")
-        
-        # output = st.empty()
-        # yoloOnVideo()
-        # while cap.isOpened(): # exactly the same procedure as with 
-        #     ret, frame = cap.read()
-        #     if ret:
-        #         infer_image(frame, output)
-        #         curr_time = time.time()
-        #         fps = 1 / (curr_time - prev_time)
-        #         prev_time = curr_time
-        #         st1_text.markdown(f"**{height}**")
-        #         st2_text.markdown(f"**{width}**")
-        #         st3_text.markdown(f"**{fps:.2f}**")
-        #     else:
-        #         st.write("Can't read frame, stream ended? Exiting ....")
-        #         break
-
-        # cap.release()
 
 # --- / 
 # -- / 
@@ -313,7 +362,6 @@ def processWebcam(loadedModel:object,objectClasses:list,requiredConfidence:float
 # - amount of faulty detection -> user input!
 # - image encoded as 1D-array 
 # - image dimensions used to reshape accordingly
-
 # --- / 
 # -- / 
 def formEvaluateResult()-> Optional[dict]: 

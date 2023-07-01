@@ -14,7 +14,7 @@ import settings.uiSettings as UiSettings
 from modules.moduleShowReadMe import DisplayReadme
 from modules.moduleShowSourceCode import ShowSourceCode
 from UI.uiRunningApp import run_the_app
-from UI.uiYolo import runYoloInterface
+from UI.uiModel import runModelInterface
 
 
 
@@ -25,7 +25,7 @@ def SelectProgramMode()  :
     function displaying a streamlit menu with several options
     upon selection of a module to execute, said module is executed 
     '''
-    appModeSelection = ["Readme File", "Run SSD", "Yolov8", "Show the Code","Display Evaluations"];
+    appModeSelection = ["Readme File", "Run Model", "Show the Code","Display Evaluations"];
     appModeSelectionIcons = ["book", "display", "display", "cloud-download"]
     app_mode = option_menu(
         None, 
@@ -37,16 +37,13 @@ def SelectProgramMode()  :
     if app_mode == appModeSelection[0]:
         # display readme 
         DisplayReadme();
-    elif app_mode == appModeSelection[1]: 
-        # runObjectDetection using SSD
-        run_the_app()
-    elif app_mode == appModeSelection[2]:
+    elif app_mode == appModeSelection[1]:
         # runObjectDetection using yolov8
-        runYoloInterface()
-    elif app_mode == appModeSelection[3]:
+        runModelInterface()
+    elif app_mode == appModeSelection[2]:
         # showing source code for 
         ShowSourceCode()
-    elif app_mode == appModeSelection[4]:
+    elif app_mode == appModeSelection[3]:
         displayResultSelection()
 
 # --- / 
