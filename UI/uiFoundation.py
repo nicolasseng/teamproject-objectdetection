@@ -17,7 +17,6 @@ from UI.uiRunningApp import run_the_app
 from UI.uiModel import runModelInterface
 
 
-
 # --- / 
 # -- / function to select mode to display at runtime
 def SelectProgramMode()  : 
