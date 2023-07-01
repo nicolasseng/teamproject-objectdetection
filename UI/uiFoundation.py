@@ -38,7 +38,7 @@ def SelectProgramMode()  :
     elif app_mode == appModeSelection[1]:
         # runObjectDetection using yolov8
         runYoloInterface()
-    elif app_mode == appModeSelection[3]:
+    elif app_mode == appModeSelection[2]:
         # showing source code for 
         ShowSourceCode()
 
