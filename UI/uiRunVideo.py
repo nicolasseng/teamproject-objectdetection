@@ -5,7 +5,7 @@ It supplies the structure of our webapp in order to supply a model
 
 # --- /
 # -- / external imports 
-from typing import Optional
+from typing import Callable, Optional
 import cv2 
 import streamlit as st
 import time
@@ -24,7 +24,7 @@ from modules.moduleYoloV8 import yoloOnVideo
 # TODO add description and example usage ? 
 # TODO videoObject should be a string or path --> we have to decide whether
 # to directly pipe a stream of data or just the indicator for doing so 
-def interfaceVideo(loadedModel:object,videoObject:Optional[object],objectClasses:list,requiredConfidence:float) -> Optional[bool]:
+def interfaceVideo(loadedModel:object,functionToRun:Callable, videoObject:Optional[object],objectClasses:list,requiredConfidence:float) -> Optional[bool]:
     ''' 
     this function takes a loaded model to use --> could be any yoloV8 or similar
     further takes a video stream( either Webcam or supplied video!) and runs object detection with
@@ -70,8 +70,8 @@ def interfaceVideo(loadedModel:object,videoObject:Optional[object],objectClasses
     output = st.empty()
     
     # loading model before use ! 
-    
-    terminatedVideoStream = yoloOnVideo(loadedModel,videoStream,output,col2_text,objectClasses,requiredConfidence)
+    terminatedVideoStream = functionToRun(loadedModel,videoStream,output,col2_text,objectClasses,requiredConfidence)
+    # terminatedVideoStream = yoloOnVideo(loadedModel,videoStream,output,col2_text,objectClasses,requiredConfidence)
     if terminatedVideoStream: 
         # closing videoStream
         videoStream.release()
