@@ -7,16 +7,19 @@ It will be removed once we have refactored and **united** our webinterface so th
 import tempfile
 # --- / 
 # -- / external imports 
+from base64 import decode
 from typing import Optional
-
+from PIL import Image
+# TODO remove from this file  --> no logic!
+import numpy
 import streamlit as st
 from numpy import select  # ought to be removed at a later point
 from PIL import Image
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import gatherFilePath, gatherFolderContent
-from modules.moduleYoloV8 import initializeModel, offlineData, runYoloOnImage
+from modules.moduleFileManagement import convertArrayToImage, convertImageTo1DArray, gatherFilePath, gatherFolderContent, loadFromFile, prepareImageToSave, saveEvaluationToFile, saveToFile, convertListToArray
+from modules.moduleYoloV8 import initializeModel, runYoloOnImage, offlineData
 from UI.uiRunningApp import run_the_app
 from UI.uiRunVideo import interfaceVideo
 
@@ -129,8 +132,8 @@ def runYoloInterface():
     # TODO refactor to separate function!
     if sourceTypeSelected == SourceTypes[0]:
         selectedImage = selectFileSource(True,sourceOptions,sourceOptionSelected)
-        processImage(model,classes,selectedImage,confidence)
-
+        processImage(model,classes,selectedImage,confidence,modelSelected)
+        
     elif sourceTypeSelected == SourceTypes[1]:
         picture = st.camera_input("Take a picture")
         if picture:
@@ -231,7 +234,7 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
     
     
     
-def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:float):
+def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:float,usedModel:str):
      
     # once image file was loaded or not 
         col1, col2 = st.columns(2)
@@ -242,15 +245,40 @@ def processImage(loadedModel:object,objectClasses:list,selectedImage,confidence:
             detectionResult = runYoloOnImage(loadedModel,objectClasses,selectedImage,confidence)
             st.image(detectionResult['image'], caption="Detected Image",
                      use_column_width=True)
-            try:
-                with st.expander("Detection Results"):
-                    for box in detectionResult['foundObjects']:
-                        st.write(box)
             
-            except Exception as ex:
-                st.write("No image was uploaded yet!")
-
-
+            # --- 
+            # - logic for evaluating results
+            dictOfEvaluation:Optional[dict] = formEvaluateResult()
+            if dictOfEvaluation == None: 
+                return 
+            
+            # collecting all results: 
+            
+            # convertedImage:numpy.ndarray = convertImageTo1DArray(detectionResult["image"])
+            # imageStringRepresentation:str = convertedImage.tolist()
+            imageListRepresentation:list = prepareImageToSave(detectionResult["image"])
+            imageDimension:tuple = detectionResult["image"].shape
+            
+            dictDetectionEval:dict= {
+                "usedModel": usedModel,
+                "confidence": confidence,
+                "amountDetected": len(detectionResult["foundObjects"]),
+                "actualAmount": dictOfEvaluation["amount"],
+                "faultyDetection": dictOfEvaluation["faulty"],
+                "imageArray": imageListRepresentation,
+                "imageDimension": imageDimension
+                }
+            saveEvaluationToFile(dictDetectionEval,dictDetectionEval["usedModel"])
+            
+            # --- / 
+            # -- / testing only!!
+            # pathToTest = gatherFilePath("**/testEvaluation.json")
+            # maybeDict:Optional[dict] = loadFromFile(pathToTest)
+            
+            # extractedArray = convertListToArray(maybeDict["imageArray"])
+            # arrayDimension = maybeDict["imageDimension"]
+            # imageArray = convertArrayToImage(extractedArray,arrayDimension)
+            # st.image(imageArray,"extracted image!!")
 # --- / 
 # -- / 
 # TODO refactor to another file --> does not belong here! 
@@ -305,3 +333,29 @@ def processWebcam(loadedModel:object,objectClasses:list,requiredConfidence:float
     '''
     interfaceVideo(loadedModel,None,objectClasses,requiredConfidence)
     
+
+# dictionary returned should contain: 
+# - usedModel -> to be displayed upon showcase
+# - confidence level : 
+# - detected amount of objects
+# - actual amount of objects detected -> user input!
+# - amount of faulty detection -> user input!
+# - image encoded as 1D-array 
+# - image dimensions used to reshape accordingly
+
+# --- / 
+# -- / 
+def formEvaluateResult()-> Optional[dict]: 
+    with st.form("evaluating results"):
+        st.write("insert the correct data for this detected image")
+        st.write("once done, click the submit-button to save the result")
+        actualDetection:int = int(st.number_input("actual amount of detections",min_value=0,max_value=20,step=1))
+        amountFaultyDetection:int = int(st.number_input("amount of faulty detections",min_value=0,max_value=20,step=1))
+        submitted = st.form_submit_button("save results")
+        if submitted:
+            resultDict:dict = {
+                "amount": actualDetection,
+                "faulty": amountFaultyDetection
+            }
+            return resultDict
+        return None
