@@ -20,6 +20,7 @@ import modules.moduleDetectionMobileNetSSD as MSSD
 import settings.modelSettings as msettings
 from modules.moduleFileManagement import gatherFolderContent
 from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
+from .uiModelComparison import compareModels
 
 # --- /
 # -- / 
@@ -27,6 +28,7 @@ from settings.modelSettings import MSSDnetwork, MSSDWeight, gatherFilePath
 def run_the_app():
     st.sidebar.markdown("# Settings")
     #TODO refactor further
+
     confidence_threshold = .45
     inputOptionSelected: Optional[str] = None
     inputTypes:list =  ["image", "webcam"]
