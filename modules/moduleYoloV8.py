@@ -6,11 +6,11 @@ necesssary and is later piped or accessed by the UI.
 
 # --- /
 # -- / external imports 
+from ctypes import Union
 from typing import Optional
 import cv2 
 import time
 from matplotlib.cm import np
-import os
 from ultralytics import YOLO
 # TODO to be removed once refactored! 
 import streamlit as st
@@ -131,26 +131,36 @@ def runYoloOnImage(loadedModel:object,objectClasses:list,imgObj,requiredConfiden
 # -- / 
 # TODO add description 
 # TODO add function signature
-def trainModel(model):
-    # Load the model.
-    # model = YOLO('yolov8n.pt')
+def trainModel(model) -> Optional[str]:
+    # TODO remove boolean-Blindness --> String values ambigous! 
     # TODO remove Stringvalue
     configFile:Optional[str] = gatherFilePath("**/yolov8_config.yaml")
-    if configFile == None:
-        createYaml()
-        return trainModel(model)
-
-    # Training.
-    # TODO adapt output path to save results in "preTrainedYolo"
-    results = model.train(
-        data=gatherFilePath('**/yolov8_config.yaml'),
-        imgsz=1280,
-        epochs=1,
-        batch=8,
-        name='yolov8n_v8_50e'
-        )
-
-    return results
+    if configFile != None:
+        # TODO adapt output path to save results in "preTrainedYolo"
+        try: 
+            savedPath = gatherFolderPath("**/preTrainedYolo")
+            resultName:str = 'yolov8n_v8_50e'
+            savingLocation = createPath(savedPath,result_name)
+            results = model.train(
+                data=gatherFilePath('**/yolov8_config.yaml'),
+                imgsz=1280,
+                epochs=1,
+                batch=8,
+                name= resultName,
+                save_dir= savingLocation
+                )
+            
+        except : 
+            return "error running model"
+        
+    else: 
+        # not path was found: 
+        possibleError:Optional[str] = createYaml()
+        if possibleError != None: 
+            return possibleError
+        # if created with no error, run again 
+        return "Yaml was created, re run test once more"
+    # return results
 
 
 # --- /
@@ -165,12 +175,12 @@ def offlineData(loadedModel):
     st.write("Click the 'Train Model' button to start training.")
 
     if st.button("Train Model"):
-        try:
-            trainModel(loadedModel)
-            # TODO improve verbosity to show more information ( what was trained, progress ..)
-            st.write("Training complete!")
-        except RuntimeError:
-            st.error('No data set provided or the "data" folder is not unzipped')
+        possibleError:Optional[str] = trainModel(loadedModel)
+        if possibleError != None: 
+            st.error(possibleError)
+            return # aborting function
+        # TODO improve verbosity to show more information ( what was trained, progress ..)
+        st.write("Training complete!")
 
 
 
