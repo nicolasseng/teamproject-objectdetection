@@ -7,9 +7,11 @@ This file contains several functions to manage, access, read or modify files
 import glob 
 import platform
 import os
+import json
 from typing import Optional
+import time
 
-from numpy import log
+import numpy
 
 # --- /
 # -- / function to read a given file
@@ -113,6 +115,135 @@ def createPath(rootPath:str, folder:str) -> str:
     convertedQueryPath:str = rootPath + os.sep + folder
     return convertedQueryPath
 
+# --- /
+# -- / 
+def convert2Json(queriedDict:dict) ->Optional[str]:
+    try:
+        convertedDict:str =json.dumps(queriedDict)
+        return convertedDict
+    except:
+        return None
+# --- /
+# -- /
+def convert2Dict(queriedString:str)-> Optional[dict]:
+    try:
+        convertedString:dict =json.loads(queriedString)
+        return convertedString
+    except:
+        return None
 
+# --- /
+# -- / 
+
+def saveEvaluationToFile(dictToSave:dict,filePrefix:str) -> Optional[str]:
+    ''' 
+    wrapping function for **saveToFile** specifically for saving detectionEvaluation
+    
+    ## example usage: 
+    saveEvaluationToFile(dictionary,"savedDict") -> saving file to detectionResults/savedDict[...].json 
+    '''
+    
+    folderPath:str = "detectionResults"
+    return saveToFile(dictToSave,filePrefix,folderPath)
+    
+
+def saveToFile(dictToSave:dict,filePrefix:str,folderPath:str) -> Optional[str]:
+    ''' 
+    function taking a dictionary and a prefix for the file. 
+    Saving the dictionary as json encoded String.
+    
+     
+    this function was specifically written for saving dictionary-blobs from objectdetection evaluations
+    returns a **String** representing the path to the file
+    ## example usage:
+    saveToFile(dictionary,"savedDict") -> will save the given file and return filePath
+    '''
+    
+    convertedDict:Optional[str] = convert2Json(dictToSave)
+    
+    if convertedDict ==None:
+        raise Exception("could not convert to json string")
+    try:
+        resultFolder:str = gatherFolderPath("**/{}".format(folderPath))
+        fileName:str = "{}_{}.json".format(filePrefix,time.time())
+        finalFilePath:str = createPath(resultFolder,fileName)
+        with open(finalFilePath,"x") as file :
+            file.write(convertedDict)
+        return finalFilePath
+    except:
+        return None
+    
+# --- /
+# -- /   
+def loadFromFile(pathFile:str)-> Optional[dict]:
+    '''
+    function taking path to json file, parsing and returning the contained json object as dictionary 
+    returns **Dictionary** if the given path contains one
+    
+    ## example usage: 
+    gatheredPath = gatherFilePath("detectionResults/testEvaluation.json")
+    loadFromFile(gatheredPath) -> returns given dictionary in file
+    '''
+    
+    try:
+        with open(pathFile,"r") as file :
+            content:str = file.read()
+        maybeDictionary:Optional[dict] = convert2Dict(content)
+        return maybeDictionary
+    except:
+        return None
+    
+# --- / 
+# -- / 
+def convertImageTo1DArray(ImageArray:numpy.ndarray)-> numpy.ndarray:
+    '''
+    function converting 3D-image array to 1D representation 
+    
+    returns 1D-array of input imagearray
+    ''' 
+    compressedArray = ImageArray.reshape(-2)
+    return compressedArray
+# --- / 
+# -- / 
+
+def convertArrayToImage(compressedArray:numpy.ndarray,arrayDimension:tuple) -> numpy.ndarray:
+    ''' 
+    function converting a 1-Dimensional numpy-array to 3D-array 
+    aligning with shape of image-like representation used by streamlit and more
+    
+    returns numpy.ndarray in shape of given **arrayDimension**
+    
+    ## example usage: 
+    
+    '''
+    reshapedArray:numpy.ndarray = compressedArray.reshape(arrayDimension)
+    return reshapedArray
+# --- / 
+# -- / 
+ 
+def convertListToArray(arraylist:list) -> numpy.ndarray:
+    ''' 
+    function takes a list and returns as **numpy.ndarray**
+    '''
+    
+    return numpy.asarray(arraylist)
+# --- / 
+# -- / 
+
+def prepareImageToSave(imageArray:numpy.ndarray) -> Optional[list]:
+    '''
+    function taking an imageArray(shape of(n,d,3)) and converting it to saveable List 
+    returns said *1D-list* 
+    
+    ## example usage: 
+    prepareImageToSave([[0,1,1],[1,1,0][1,1,1]]) -> [0,1,1,1,1,0,1,1,1]  
+    '''
+    try:
+        oneDimArray:numpy.ndarray = convertImageTo1DArray(imageArray)
+        listOfArray:list = oneDimArray.tolist()
+        return listOfArray
+    except:
+        return None
+        
 if __name__ == "__main__":
     exit("not meant to be run")
