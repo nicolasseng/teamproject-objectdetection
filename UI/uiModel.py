@@ -239,11 +239,23 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
     # TODO get rid of sentinel values
     # TODO Refactor
     # initialize with sample image, preventing NONETYPE error
-    defaultFile = gatherFilePath("**/img1.jpg")
-    if not isImage:
-        defaultFile = gatherFilePath("**/sampleVid1.mp4")
+    # defaultFile = gatherFilePath("**/img1.jpg")?
     
-                
+    sampleImages:list|None = gatherFolderContent("**/sample_img")
+    if (sampleImages == None): 
+        st.error("sample images were not supplied")
+        exit("ending applicaton, missing sample images")
+    else: 
+        defaultFile = sampleImages[0] 
+    
+    if not isImage:
+        sampleVideos:list|None = gatherFolderContent("**/sample_vid")
+        if(sampleVideos == None):
+            st.error("sample videos were not supplied")
+            exit("ending applicaton, missing sample videos")
+        else:   
+            defaultFile = sampleVideos[0]
+    
     if selectedSource == SourceOptions[0]: # sample files
         # get all sample images
         queriedPath:str = "sample_img"
