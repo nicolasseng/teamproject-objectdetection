@@ -32,7 +32,8 @@ def readFile(filepath:str) -> Optional[str]:
         readFile = None
     return readFile;
 
-
+# --- /
+# -- / 
 def gatherFolderContent(queriedFolderPath:str) -> Optional[list]:
     ''' 
     function takes a **string** denoting a path and returns a list with all of its items 
@@ -105,6 +106,8 @@ def gatherFolderPath(queriedFolderName: str) -> Optional[str]:
     except:
         return None
 
+# --- / 
+# -- / 
 def createPath(rootPath:str, folder:str) -> str:
     '''
     function takes **rootPath** denoting a FolderPath and further a second string denoting a file or folder 
@@ -123,6 +126,7 @@ def convert2Json(queriedDict:dict) ->Optional[str]:
         return convertedDict
     except:
         return None
+
 # --- /
 # -- /
 def convert2Dict(queriedString:str)-> Optional[dict]:
@@ -134,7 +138,6 @@ def convert2Dict(queriedString:str)-> Optional[dict]:
 
 # --- /
 # -- / 
-
 def saveEvaluationToFile(dictToSave:dict,filePrefix:str) -> Optional[str]:
     ''' 
     wrapping function for **saveToFile** specifically for saving detectionEvaluation
@@ -146,7 +149,8 @@ def saveEvaluationToFile(dictToSave:dict,filePrefix:str) -> Optional[str]:
     folderPath:str = "detectionResults"
     return saveToFile(dictToSave,filePrefix,folderPath)
     
-
+# --- / 
+# -- / 
 def saveToFile(dictToSave:dict,filePrefix:str,folderPath:str) -> Optional[str]:
     ''' 
     function taking a dictionary and a prefix for the file. 
@@ -203,9 +207,9 @@ def convertImageTo1DArray(ImageArray:numpy.ndarray)-> numpy.ndarray:
     ''' 
     compressedArray = ImageArray.reshape(-2)
     return compressedArray
+
 # --- / 
 # -- / 
-
 def convertArrayToImage(compressedArray:numpy.ndarray,arrayDimension:tuple) -> numpy.ndarray:
     ''' 
     function converting a 1-Dimensional numpy-array to 3D-array 
@@ -244,6 +248,8 @@ def prepareImageToSave(imageArray:numpy.ndarray) -> Optional[list]:
         return listOfArray
     except:
         return None
-        
+ 
+ 
+       
 if __name__ == "__main__":
     exit("not meant to be run")

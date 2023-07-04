@@ -6,16 +6,13 @@ Primarily based on a pre-trained model utilizing Mobilenet-SSD, a single stage n
 # --- / 
 # -- / external imports 
 from typing import Optional
+from PIL import Image
 import numpy as np 
 import cv2 as opencv
-from streamlit.elements.color_picker import ColorPickerMixin
-from modules.moduleFileManagement import gatherFilePath
-
-#import os
 
 # --- / 
 # -- / internal imports 
-from settings.modelSettings import MSSDResizeFactor,MSSDDisplayOpacity,ImageTextColor, RectangleWidth
+from settings.modelSettings import MSSDResizeFactor,ImageTextColor, RectangleWidth
 
 
 # --- / 
@@ -34,7 +31,6 @@ def generateLabelColors(len:int) -> list:
 
 # --- / 
 # -- / 
-
 def loadModel(modelPath:str,modelWeight:str) -> object:
     ''' 
     with given paths load and return neural net with cv2
@@ -51,7 +47,6 @@ def loadModel(modelPath:str,modelWeight:str) -> object:
 
 # --- / 
 # -- / reading image with opencv
-
 def LoadImage(imagePath:str):
     '''
     extracting image from given path 
@@ -64,7 +59,6 @@ def LoadImage(imagePath:str):
     
 # --- / 
 # -- / processing image to blob
-
 def ProcessImage(imageObject:object): 
     '''
     function loading and preparing an image for processing in network
@@ -82,8 +76,7 @@ def ProcessImage(imageObject:object):
         
 # --- / 
 # -- / wrapper for Dnn 
-
-def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,streamlitOutput,imageObj=Optional,videoStream=Optional,suppliedObjectClasses:dict=Optional):
+def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,objectClasses:list,imageObj) -> Optional[dict]:
     ''' 
     creates wrapper for "runDnn"
     @param neuralNet = initialized neural network object 
@@ -91,43 +84,28 @@ def wrapperRunningDnn(neuralNet:object,requiredConfidence:float,streamlitOutput,
     @param imageObj = imageObject previously converted to numpy.array (by streamlit or similar application)
     '''
     
+    # useless
+    ObjectColors:list = generateLabelColors(len(objectClasses))
+    if type(imageObj) == str:
+        # received path, ought to open it as numpy array 
+        imageObj = opencv.imread(imageObj)
     
-    # setting default value for objectClasses, if they are not set
-    if suppliedObjectClasses is wrapperRunningDnn.__defaults__[2]:
-        objectClasses:dict = { 0: 'background',
-        1: 'aeroplane', 2: 'bicycle', 3: 'bird', 4: 'boat',
-        5: 'bottle', 6: 'bus', 7: 'car', 8: 'cat', 9: 'chair',
-        10: 'cow', 11: 'diningtable', 12: 'dog', 13: 'horse',
-        14: 'motorbike', 15: 'person', 16: 'pottedplant',
-        17: 'sheep', 18: 'sofa', 19: 'train', 20: 'tvmonitor' }
-    else: 
-        objectClasses:dict = suppliedObjectClasses
+    if type(imageObj) != np.ndarray:
+        # converting to np array 
+        # imageObj = Image.open(imageObj)
+        imageObj = np.array(imageObj)
+        imageObj = opencv.cvtColor(imageObj,opencv.COLOR_BGR2RGB)
     
-    if videoStream is not wrapperRunningDnn.__defaults__[1] : 
-        ObjectColors = generateLabelColors(len(objectClasses))
-        # running in continous loop for capturing images and processing them 
-        #TODO implement better stopping --> shouldnt be a problem because streamlit reruns the whole python script anyway! 
-        while True:
-            result,frame = videoStream.read()
-            DetectionResults = runDnn(frame,neuralNet,requiredConfidence,objectClasses,ObjectColors)
-            
-            # correcting color mismatch after processing with opencv
-            resultedImage = opencv.cvtColor(DetectionResults['image'],opencv.COLOR_BGR2RGB)
-            streamlitOutput.image(resultedImage)
-    
-    if imageObj is not  wrapperRunningDnn.__defaults__[0]: 
-        # running Dnn on supplied image
-        DetectionResults = runDnn(imageObj,neuralNet,requiredConfidence,objectClasses)
-        streamlitOutput.image(DetectionResults['image'],
-                                use_column_width="auto",
-                                caption="Image  object detection",
-                              )
+         
+    imageObj = opencv.cvtColor(imageObj,opencv.COLOR_BGR2RGB)
+    DetectionResults = runDnn(imageObj,neuralNet,requiredConfidence,objectClasses,ObjectColors)
 
-
+    
+    return DetectionResults
+   
 # --- / 
 # -- / running Dnn 
-
-def runDnn(imageObject,neuralNet:object,requiredConfidence:float,objectClasses:dict,ClassColor=None) -> dict:
+def runDnn(imageObject,neuralNet:object,requiredConfidence:float,objectClasses:list,ClassColor=None) -> dict:
     '''
     takes an imageObject, neural network object - initialized, and the required confidence to achieve for detected objects. 
     
@@ -158,6 +136,7 @@ def runDnn(imageObject,neuralNet:object,requiredConfidence:float,objectClasses:d
 
 # --- / 
 # -- / 
+# TODO complete signature
 def addRectangle(imageObj,BoundingBoxCoords:dict, color):
 
     # calculating position of rectangle corners
@@ -170,6 +149,7 @@ def addRectangle(imageObj,BoundingBoxCoords:dict, color):
     
 # --- /
 # -- / 
+# # TODO complete signature
 def addLabel(imageObj,detectionBoundingBox:dict,Label:str,confidence:float,color):
     
     textLabel = "{}:{}".format(Label,str(confidence))
@@ -191,11 +171,12 @@ def addLabel(imageObj,detectionBoundingBox:dict,Label:str,confidence:float,color
     return imageObj
  
 # --- /
-# -- / 
-def iterateDetectionResults(imageObj,detectedObjects,requiredConfidence,objectClasses,ObjectClassColor):
+# -- /
+# TODO complete signature 
+def iterateDetectionResults(imageObj,detectedObjects,requiredConfidence,objectClasses,ObjectClassColor) -> dict:
     
     # list containing dictionary with their name : color
-    foundObjects:dict = {}
+    foundObjects:list = []
     
     for prediction in range(detectedObjects.shape[2]):
         
@@ -228,9 +209,9 @@ def iterateDetectionResults(imageObj,detectedObjects,requiredConfidence,objectCl
                 ObjectClassString = objectClasses[labelIndex]
                 
                 # adding entry to dictionary to return! 
-                foundObjects[ObjectClassString] = ObjectClassColor[labelIndex] 
+                foundObjects.append(ObjectClassColor[labelIndex]) 
                 imageObj = addLabel(imageWithRect,detectionBoundingBox,ObjectClassString,confidence,ObjectClassColor[labelIndex])
-    
+                # imageObj = opencv.cvtColor(imageObj,opencv.COLOR_BGR2RGB)
     Results:dict= {
         "image": imageObj,
         "foundObjects": foundObjects,

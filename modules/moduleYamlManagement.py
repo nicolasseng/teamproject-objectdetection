@@ -12,7 +12,7 @@ import yaml
 # -- / internal imports 
 from modules.moduleFileManagement import createPath, gatherFilePath, gatherFolderPath
 
-def createYaml():
+def createYaml() -> Optional[str]:
     '''
     searches for folders with name "test" and "valid" 
     if found: creates yaml file which contains those both folders as source for training datasets 
@@ -23,7 +23,8 @@ def createYaml():
         validPath = gatherFolderPath('valid')
         
         if testPath == None or validPath == None: 
-            raise Exception("Folder structure was not set up, aborting custom training")
+            # raising an exception would be useless, we could just abort by returning the error too 
+            return "testpath and validpath directories were not found"
             
         config = {
             'train': createPath(testPath, 'images'),
@@ -33,7 +34,8 @@ def createYaml():
         }
         # Specify the subfolder name
         subfolder:str = gatherFolderPath("**/TrainingYolo")
-        print(subfolder)
+        if subfolder == None: 
+            return "TrainingYolo directory was not found, aborting"
         # Create the subfolder if it doesn't exist
         os.makedirs(subfolder, exist_ok=True)
         
@@ -44,7 +46,7 @@ def createYaml():
         with open(file_path, 'w') as file:
             yaml.dump(config, file, sort_keys=False)
     except:
-        raise Exception("no Path was found, aborting")
+        return "an error occured during creation of YAML-Config file"
 
 if __name__ == "__main__":
     exit("not meant to be run")
