@@ -2,4 +2,4 @@
 __pycache__/
 objectdetectionENV/*
 .vscode/
-
+env/*
