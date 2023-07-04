@@ -38,6 +38,7 @@ def runModelInterface():
     # input options
     SourceTypes:list = ['image', 'video', 'webcam', "YouTube Video", "Offline Data"]
     sourceTypeSelected,sourcePath  = selectSource(SourceTypes)
+    
     st.sidebar.markdown("---")
     
     # gathering model to use 
@@ -61,7 +62,7 @@ def runModelInterface():
 
 # --- / 
 # -- / 
-def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath= None) -> None:
+def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath:str|numpy.ndarray ) -> None:
     ''' 
     function being run, whenever mobilenetssd was selected as active model 
     this functino collects required data and then runs the model on the selected source
@@ -227,7 +228,7 @@ def gatherConfidence() -> float:
 
 # --- / 
 # -- / 
-def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str])-> str | object | None:
+def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str])-> str | object:
     '''
     function that queries file to use for detection. 
     It returns either a sample File (image or video) or an uploaded file (by the user )
@@ -238,11 +239,23 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
     # TODO get rid of sentinel values
     # TODO Refactor
     # initialize with sample image, preventing NONETYPE error
-    defaultFile = gatherFilePath("**/sampleImg.jpg")
-    if not isImage:
-        defaultFile = gatherFilePath("**/sampleVid1.mp4")
+    # defaultFile = gatherFilePath("**/img1.jpg")?
     
-                
+    sampleImages:list|None = gatherFolderContent("**/sample_img")
+    if (sampleImages == None): 
+        st.error("sample images were not supplied")
+        exit("ending applicaton, missing sample images")
+    else: 
+        defaultFile = sampleImages[0] 
+    
+    if not isImage:
+        sampleVideos:list|None = gatherFolderContent("**/sample_vid")
+        if(sampleVideos == None):
+            st.error("sample videos were not supplied")
+            exit("ending applicaton, missing sample videos")
+        else:   
+            defaultFile = sampleVideos[0]
+    
     if selectedSource == SourceOptions[0]: # sample files
         # get all sample images
         queriedPath:str = "sample_img"
