@@ -4,21 +4,28 @@ this file **temporarily** contains all the logic to provide a website build upon
 It will be removed once we have refactored and **united** our webinterface so that it can be run by all! 
 ''' 
 
+import tempfile
 # --- / 
 # -- / external imports 
 from typing import Callable, Optional
-from PIL import Image
-import streamlit as st
-import tempfile
-import numpy
 
+import numpy
+import streamlit as st
+from cap_from_youtube import cap_from_youtube
+from PIL import Image
+
+import modules.moduleDetectionMobileNetSSD as MSSD
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import gatherFilePath, gatherFolderContent, prepareImageToSave, saveEvaluationToFile
-from modules.moduleYoloV8 import initializeModel, mssdOnVideo, runYoloOnImage, offlineData, yoloOnVideo
+from modules.moduleFileManagement import (gatherFilePath, gatherFolderContent,
+                                          prepareImageToSave,
+                                          saveEvaluationToFile)
+from modules.moduleLoadYoutube import youtube
+from modules.moduleYoloV8 import (initializeModel, mssdOnVideo, offlineData,
+                                  runYoloOnImage, yoloOnVideo)
 from settings.modelSettings import MSSDnetwork, MSSDWeight
-import modules.moduleDetectionMobileNetSSD as MSSD
 from UI.uiRunVideo import interfaceVideo
+
 
 # --- /
 # -- / 
@@ -92,8 +99,11 @@ def runOnMobileNet(SourceTypes:list,selectedType:str,sourcePath:str|numpy.ndarra
         interfaceVideo(model,mssdOnVideo,None,objectClasses,confidence)
         
     elif selectedType == SourceTypes[3]:
-        st.error("youtube loading was not implemented yet")
-        return
+        source_youtube = st.sidebar.text_input("YouTube url")
+        if source_youtube is not "":
+            youtube(model,mssdOnVideo,source_youtube,objectClasses,confidence)
+        else:
+            st.error("Waiting for your youtube url.")
     
     elif selectedType == SourceTypes[4]:
         st.error("Offline training has not been implemented for MobileNetSSD yet.")
@@ -118,7 +128,7 @@ def runOnYolo(SourceTypes:list,selectedType:str,sourcePath= None) -> None:
     
     if selectedType == SourceTypes[0]:
         
-        interfaceImage(model,runYoloOnImage, gatheredClasses,sourcePath,confidence,modelName)
+        interfaceImage(model,runYoloOnImage,gatheredClasses,sourcePath,confidence,modelName)
     
     elif selectedType == SourceTypes[1]:
         interfaceVideo(model,yoloOnVideo,sourcePath,gatheredClasses,confidence)
@@ -127,8 +137,12 @@ def runOnYolo(SourceTypes:list,selectedType:str,sourcePath= None) -> None:
         interfaceVideo(model,yoloOnVideo,None,gatheredClasses,confidence)
         
     elif selectedType == SourceTypes[3]:
-        st.error("youtube loading was not implemented yet")
-        return
+        source_youtube = st.sidebar.text_input("YouTube url")
+        if source_youtube is not "":
+            youtube(model,yoloOnVideo,source_youtube,gatheredClasses,confidence)
+        else:
+            st.error("Waiting for your youtube url.")
+        # st.error("youtube loading was not implemented yet")
     
     elif selectedType == SourceTypes[4]:
         # return 
