@@ -12,7 +12,7 @@ from UI.uiShowEvaluation import displayResultSelection
 # -- / internal imports 
 import settings.uiSettings as UiSettings
 from UI.uiShowReadMe import DisplayReadme
-from modules.moduleShowSourceCode import ShowSourceCode
+from UI.uiShowSourceCode import ShowSourceCode
 # from UI.uiRunningApp import run_the_app
 from UI.uiModel import runModelInterface
 
