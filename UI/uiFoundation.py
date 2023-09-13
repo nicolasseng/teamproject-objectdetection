@@ -11,9 +11,9 @@ from UI.uiShowEvaluation import displayResultSelection
 # --- / 
 # -- / internal imports 
 import settings.uiSettings as UiSettings
-from modules.moduleShowReadMe import DisplayReadme
+from UI.uiShowReadMe import DisplayReadme
 from modules.moduleShowSourceCode import ShowSourceCode
-from UI.uiRunningApp import run_the_app
+# from UI.uiRunningApp import run_the_app
 from UI.uiModel import runModelInterface
 
 

@@ -14,9 +14,10 @@ import numpy
 
 # --- / 
 # -- / internal imports 
-from modules.moduleFileManagement import gatherFilePath, gatherFolderContent, prepareImageToSave, saveEvaluationToFile
+from modules.moduleFileManagement import gatherFilePath, gatherFolderContent
 from modules.moduleYoloV8 import initializeModel, mssdOnVideo, runYoloOnImage, offlineData, yoloOnVideo
 from settings.modelSettings import MSSDnetwork, MSSDWeight
+from UI.uiRunImage import interfaceImage
 import modules.moduleDetectionMobileNetSSD as MSSD
 from UI.uiRunVideo import interfaceVideo
 
@@ -307,76 +308,3 @@ def selectFileSource(isImage:bool,SourceOptions:list,selectedSource:Optional[str
     
     return selectedFile
     
-# --- /
-# -- /
-def interfaceImage(loadedModel:object,functionRunModel:Callable ,objectClasses:list,selectedImage:str| numpy.ndarray,confidence:float,usedModel:str):
-    ''' 
-    function that displays both the unprocessed and processed image after being run on a given model 
-    takes the following arguments: 
-    - loaded Model necessary for the function to run on 
-    - functionRunModel with the following signature ( loadedModel:object, confidence:float, objectClasses:list, selectedImage:array|str) 
-    - objectClasses :list 
-    - selectedImage: numpy. array | str
-    - confidence : float
-    - usedModel : string representation of used model
-    
-    '''
-    # once image file was loaded or not 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.image(selectedImage, caption="Selected Image", use_column_width=True)
-    with col2:
-        
-        # varies based on given function
-        detectionResult = functionRunModel(loadedModel,confidence,objectClasses,selectedImage)
-        # runYoloOnImage(loadedModel,confidence, objectClasses,selectedImage)
-        # wrapperRunningDnn(loadedNet,confidence_threshold,objectClasses,selectedImage)
-
-        st.image(detectionResult['image'], caption="Detected Image",
-                    use_column_width=True)
-        
-        # - logic for evaluating results
-        dictOfEvaluation:Optional[dict] = formEvaluateResult()
-        if dictOfEvaluation == None: 
-            return 
-        
-        # collecting all results: 
-        imageListRepresentation:list = prepareImageToSave(detectionResult["image"])
-        imageDimension:tuple = detectionResult["image"].shape
-        
-        dictDetectionEval:dict= {
-            "usedModel": usedModel,
-            "confidence": confidence,
-            "amountDetected": len(detectionResult["foundObjects"]),
-            "actualAmount": dictOfEvaluation["amount"],
-            "faultyDetection": dictOfEvaluation["faulty"],
-            "imageArray": imageListRepresentation,
-            "imageDimension": imageDimension
-            }
-        saveEvaluationToFile(dictDetectionEval,dictDetectionEval["usedModel"])
-    
-
-# dictionary returned should contain: 
-# - usedModel -> to be displayed upon showcase
-# - confidence level : 
-# - detected amount of objects
-# - actual amount of objects detected -> user input!
-# - amount of faulty detection -> user input!
-# - image encoded as 1D-array 
-# - image dimensions used to reshape accordingly
-# --- / 
-# -- / 
-def formEvaluateResult()-> Optional[dict]: 
-    with st.form("evaluating results"):
-        st.write("insert the correct data for this detected image")
-        st.write("once done, click the submit-button to save the result")
-        actualDetection:int = int(st.number_input("actual amount of detections",min_value=0,max_value=20,step=1))
-        amountFaultyDetection:int = int(st.number_input("amount of faulty detections",min_value=0,max_value=20,step=1))
-        submitted = st.form_submit_button("save results")
-        if submitted:
-            resultDict:dict = {
-                "amount": actualDetection,
-                "faulty": amountFaultyDetection
-            }
-            return resultDict
-        return None
