@@ -31,8 +31,8 @@ def ShowSourceCode() -> None:
     st.title("Explore Source Code of this project")
     st.markdown("below you can find a selection of all available files in the current direction")
     st.markdown("the directory can be changed at a later point, this is still work in progress")
-    st.markdown("**{} Files** are available".format(quantityOfFiles))
-    st.write("current directory: {}".format(os.getcwd()))
+    st.markdown("A total of **{} Files** are available".format(quantityOfFiles))
+    st.markdown("current directory: {}".format(os.getcwd()))
     indexSelection:int = 0;
     # reacting to requests to change selected code
     if 'indexSelection' not in st.session_state:
@@ -52,8 +52,8 @@ def WrapCodeBlock (filepath:str):
     function taking filepath and creating a streamlit **code block** with this files content 
     returns nothing
     '''
-    sourceCode:str = readFile(filepath)
-    st.markdown("### {}".format(filepath))
+    sourceCode:str | None = readFile(filepath)
+    st.markdown("### current file {}".format(filepath))
     st.code(sourceCode,language='python')
     
     
